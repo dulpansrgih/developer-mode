@@ -1,0 +1,2243 @@
+// ================= KONFIGURASI =================
+const API_URL = 'https://script.google.com/macros/s/AKfycbx2WklmyAl8HTrNuC5MeTGsoEIEQ37G5Ev2s_7oq9b4cvrVfiF0lwRVUZ-B2Fnwi1IS/exec';
+const API_DATA_SHEET = 'https://script.google.com/macros/s/AKfycby2gRbprxpoB5xRodjdSOWU9mAncI3ACR0jXkbo6rvW2NG8jzXSbYeLGq8Fn1nfhIujNQ/exec';
+let databaseData = { penghuni: [] };
+const allRooms = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8', 'D9', 'D10'];
+let currentPageId = null;
+let pageHistory = [];
+let generatedReceiptData = null;
+let selectedRowId = null;
+
+// Fungsi baru untuk membuat animasi Progress Bar
+function getProgressLoaderHtml(text = 'Memuat Data...') {
+    return `
+        <div class="progress-loader-container">
+            <div class="progress-text">${text}</div>
+            <div class="progress-bar-wrapper">
+                <div id="progress-bar-inner" class="progress-bar-inner"></div>
+            </div>
+            <div id="progress-percentage" class="progress-percentage">0%</div>
+        </div>
+    `;
+}
+
+/**
+ * Fungsi untuk kembali ke halaman sebelumnya dalam histori.
+ */
+function goBack() {
+    // Jika hanya ada satu atau nol halaman di histori, kembali ke menu utama
+    if (pageHistory.length <= 1) {
+        // Kita panggil goHome() yang sudah ada
+        const homeButton = document.getElementById('home-button');
+        if(homeButton) homeButton.click(); // Cara aman memanggil goHome
+        return;
+    }
+
+    // Hapus halaman saat ini dari histori
+    pageHistory.pop();
+
+    // Ambil halaman terakhir dari histori (halaman sebelumnya)
+    const previousPageId = pageHistory[pageHistory.length - 1];
+
+    // Panggil displayContent TANPA menambahkan kembali ke histori
+    // (Kita akan menangani ini di langkah selanjutnya)
+    displayContent(previousPageId);
+}
+
+// ===============================================
+// ================= FUNGSI UTAMA ================
+// ===============================================
+    document.addEventListener('DOMContentLoaded', () => {
+        setupPasswordToggle();
+        updateRealtimeDisplay();
+        setInterval(updateRealtimeDisplay, 1000);
+
+// GANTI SELURUH BLOK INI DI script.js
+document.body.addEventListener('click', (e) => {
+    const target = e.target;
+
+    const goHome = () => {
+        const mainScreen = document.getElementById('main-screen');
+        const dynamicContent = document.getElementById('dynamic-content');
+        pageHistory = [];
+        
+        dynamicContent.style.opacity = '0';
+        dynamicContent.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            dynamicContent.style.display = 'none';
+            mainScreen.style.display = 'block';
+            setTimeout(() => {
+                mainScreen.style.opacity = '1';
+                mainScreen.style.transform = 'translateX(0)';
+            }, 50);
+        }, 400);
+    };
+
+    if (target.closest('.menu-card') || target.closest('.cek-detail-btn')) {
+        handleMenuClick(target.closest('.menu-card') || target.closest('.cek-detail-btn'));
+    }
+    else if (target.closest('#back-button')) {
+        goBack();
+    }
+    else if (target.closest('#home-button')) {
+        goHome();
+    }
+    else if (target.closest('#modal-cancel-btn') || target.closest('#modal-submit-btn')) {
+        handlePasswordModal(target);
+    }
+    else if (target.closest('.modal-close-btn') || target.closest('#custom-alert .form-btn')) {
+        handleCloseModal(target);
+    }
+    else if (target.closest('#show-wifi-filter-btn')) {
+        const modal = document.getElementById('wifi-filter-modal-backdrop');
+        modal.classList.remove('hidden');
+        modal.classList.add('show');
+    }
+    else if (target.closest('.filter-modal-btn')) {
+        handleWifiFilter(target);
+    }
+    else if (target.closest('.generate-btn')) {
+        displayContent('generate-pembayaran-content');
+        displayGeneratePembayaranForm({ ...target.closest('.generate-btn').dataset });
+    }
+    else if (target.closest('.reminder-btn')) {
+        handleReminderClick(target.closest('.reminder-btn'));
+    }
+    // --- PERBAIKAN PENTING ---
+    // Dibuat lebih spesifik agar tidak konflik
+    else if (target.closest('.database-card .edit-btn')) { 
+        handleEditClick(target.closest('.edit-btn')); 
+    }
+    else if (target.closest('#generate-kuitansi-btn')) {
+        handleGenerateKuitansi(e);
+    }
+    else if (target.closest('#cancel-kuitansi-btn')) {
+        displayContent('database');
+    }
+    else if (target.closest('#preview-kuitansi-btn')) {
+        handlePreviewKuitansi();
+    }
+    else if (target.closest('#share-kuitansi-btn')) {
+        handleShareKuitansi();
+    }
+    else if (target.closest('#booking-cancel-btn')) {
+        document.getElementById('booking-modal-backdrop').classList.remove('show');
+    }
+    else if (target.closest('.copy-btn')) {
+        handleCopyClick(target);
+    }
+    else if (target.closest('#datasheet-btn')) {
+        displayContent('datasheet-view');
+    }
+    else if (target.closest('#refresh-data-btn')) {
+        if (currentPageId === 'daftar-penghuni-readonly') {
+            renderViewOnlyDatabase(document.getElementById('content-area'));
+        } else if (currentPageId === 'daftar-kamar-readonly') {
+            renderViewOnlyRooms(document.getElementById('content-area'));
+        } else if (currentPageId === 'database') {
+            renderDatabaseContent(document.getElementById('content-area'));
+        } else if (currentPageId === 'datasheet-view') {
+            renderDataSheetContent(document.getElementById('content-area'));
+        }
+    } 
+    // --- BLOK BARU UNTUK TOMBOL DATA SHEET ---
+    else if (target.closest('#datasheet-add-btn')) {
+        handleDataSheetAdd();
+    } 
+    else if (target.closest('#datasheet-edit-btn')) {
+        handleDataSheetEdit();
+    } 
+    else if (target.closest('#datasheet-delete-btn')) {
+        handleDataSheetDelete();
+    }
+    // --- AKHIR BLOK BARU ---
+    else if (target.closest('#database-btn')) {
+        displayContent('database');
+    } 
+    else if (target.closest('#refresh-datasheet-btn')) {
+        renderDataSheetContent(document.getElementById('content-area'));
+    }
+    else if (target.closest('#form-cancel-btn')) {
+        renderDatabaseContent(document.getElementById('content-area'));
+    }
+    else if (target.closest('#cancel-edit-bill')) {
+        displayContent('tagihan-listrik');
+    }
+});
+
+    // Event listener khusus untuk submit form
+    document.body.addEventListener('submit', (e) => {
+    e.preventDefault(); // Mencegah refresh halaman
+    
+    if (e.target.id === 'booking-form') {
+        handleBookingSubmit(e);
+    }
+    
+    if (e.target.id === 'database-form') {
+        const button = e.target.querySelector('button[type="submit"]');
+        handleFormSubmit(e, false, button);
+    }
+    
+    if (e.target.id === 'edit-electricity-bill-form') {
+        handleElectricityBillFormSubmit(e);
+    }
+    
+    if (e.target.id === 'livechat-form') {
+        handleLiveChatSubmit(e);
+    }
+
+    // <-- BLOK BARU DITAMBAHKAN DI SINI, DI DALAM EVENT LISTENER
+    if (e.target.id === 'datasheet-edit-form') {
+        const form = e.target;
+        const button = form.querySelector('button[type="submit"]');
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+
+        const dataToUpdate = {
+            id: form.querySelector('#datasheet-edit-id').value,
+            tanggal: form.querySelector('#datasheet-edit-tanggal').value,
+            deskripsi: form.querySelector('#datasheet-edit-deskripsi').value,
+            status: form.querySelector('#datasheet-edit-status').value,
+        };
+
+        sendDataSheetRequest('update', dataToUpdate).finally(() => {
+            button.disabled = false;
+            button.innerHTML = 'Simpan Perubahan';
+            document.getElementById('datasheet-edit-modal-backdrop').classList.remove('show');
+        });
+    }
+});
+
+    const passwordInput = document.getElementById('password-input');
+    if (passwordInput) passwordInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); document.getElementById('modal-submit-btn').click(); }
+    });
+   
+    const startMonthSelect = document.getElementById('start-month');
+    const endMonthSelect = document.getElementById('end-month');
+    const singleMonthNote = document.getElementById('single-month-note');
+
+    if (startMonthSelect && endMonthSelect && singleMonthNote) {
+        const updateNoteVisibility = () => {
+            if (startMonthSelect.value && !endMonthSelect.value) {
+                singleMonthNote.style.display = 'block';
+            } else {
+                singleMonthNote.style.display = 'none';
+            }
+        };
+        startMonthSelect.addEventListener('change', updateNoteVisibility);
+        endMonthSelect.addEventListener('change', updateNoteVisibility);
+        
+        // Panggil fungsi ini saat halaman pertama kali dimuat
+        updateNoteVisibility();
+    }
+
+});
+
+// ... (SEMUA FUNGSI LAINNYA DI BAWAH INI) ...
+
+// ===============================================
+// === LOGIKA FUNGSI TOMBOL YANG DIPERBAIKI ======
+// ===============================================
+
+
+/**
+ * Menampilkan halaman e-Kwitansi dan mengisi data penghuni secara otomatis.
+ * @param {object} data - Data dari tombol yang diklik (nama, kamar, nominal, dll).
+ */
+function displayGeneratePembayaranForm(data) {
+    displayContent('generate-pembayaran-content');
+
+    setTimeout(() => {
+        const contentArea = document.getElementById('content-area');
+        
+        // Ganti dropdown dengan tampilan nama statis
+        const selectNamaLabel = contentArea.querySelector('label[for="nama-penghuni-bayar"]');
+        const selectNama = contentArea.querySelector('#nama-penghuni-bayar');
+        
+        if (selectNamaLabel && selectNama) {
+            const staticNameDisplay = document.createElement('div');
+            staticNameDisplay.className = 'static-name-display';
+            staticNameDisplay.style.padding = '12px';
+            staticNameDisplay.style.backgroundColor = '#f0f4f8';
+            staticNameDisplay.style.border = '1px solid #e0e0e0';
+            staticNameDisplay.style.borderRadius = '8px';
+            staticNameDisplay.innerHTML = `<strong>${data.nama}</strong> (Kamar ${data.kamar})`;
+            
+            selectNamaLabel.textContent = "Penghuni:";
+            selectNama.replaceWith(staticNameDisplay);
+        }
+        
+        // Set nilai-nilai form lainnya
+        contentArea.querySelector('#ruang-kamar-bayar').value = data.kamar || '';
+        contentArea.querySelector('#nominal-bayar').value = data.nominal || '';
+        
+        // Simpan nama di input tersembunyi
+        let hiddenInput = contentArea.querySelector('#nama-penghuni-bayar-hidden');
+        if (!hiddenInput) {
+            hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.id = 'nama-penghuni-bayar-hidden';
+            contentArea.querySelector('form').prepend(hiddenInput);
+        }
+        hiddenInput.value = data.nama || '';
+
+    }, 100);
+}
+
+// TAMBAHKAN FUNGSI INI KE script.js
+/**
+ * Mengubah string tanggal apapun menjadi format YYYY-MM-DD.
+ * @param {string} dateString - String tanggal (misal: "14 September 2025" atau "2025-09-14").
+ * @returns {string} - Tanggal dalam format YYYY-MM-DD.
+ */
+function formatDateToYyyyMmDd(dateString) {
+    if (!dateString || dateString === '-') return ''; // Kembalikan string kosong jika tidak ada tanggal
+
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+        // Jika format tidak dikenali, coba parsing manual untuk dd/mm/yyyy
+        const parts = dateString.split('/');
+        if (parts.length === 3) {
+            // parts[2] = yyyy, parts[1] = mm, parts[0] = dd
+            const isoDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+            return isoDate;
+        }
+        return ''; // Kembalikan kosong jika masih gagal
+    }
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // +1 karena bulan dimulai dari 0
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+}
+
+/**
+ * Membuat dan membuka link WhatsApp untuk mengirim pesan pengingat.
+ * @param {HTMLElement} button - Tombol reminder yang diklik.
+ */
+function handleReminderClick(button) {
+    const { nama, kamar, nominal, jatuhTempo, whatsapp } = button.dataset;
+
+    if (!whatsapp || whatsapp === '-') {
+        showCustomAlert('Nomor WhatsApp untuk penghuni ini tidak tersedia.');
+        return;
+    }
+
+    const formattedNominal = formatRupiah(nominal);
+    const formattedJatuhTempo = formatDate(jatuhTempo);
+
+    const message = `
+*PEMBERITAHUAN JATUH TEMPO PEMBAYARAN SEWA KAMAR*
+_______________________________
+Dengan hormat,
+Yth. Sdr. ${nama} (Penghuni Kamar ${kamar})
+
+Melalui pesan ini, kami ingin mengingatkan bahwa pembayaran sewa kamar Saudara akan jatuh tempo pada:
+*Senin, ${formattedJatuhTempo}*
+
+Adapun rincian tagihan Saudara adalah sebesar *Rp. ${formattedNominal}*. Mohon untuk dapat melakukan pembayaran sebelum atau tepat pada tanggal jatuh tempo untuk menghindari keterlambatan.
+
+Pembayaran dapat dilakukan melalui transfer ke salah satu rekening berikut:
+1) BCA : 2350332203 (Drs. Susantoro)
+2) BRI : 684801000938500 (SUSANTORO)
+3) Bank Jateng : 2161023356 (Susantoro)
+4) BNI : 0211447416 (SRI YANIARI)
+5) Mandiri : 1850004105075 (SUSANTORO)
+
+Jika Saudara sudah melakukan pembayaran, mohon abaikan pesan ini.
+
+Atas perhatian dan kerjasamanya, kami ucapkan terima kasih.
+Hormat kami,
+Pengelola Kost Putra Bu Yani
+    `.trim();
+
+    const whatsappUrl = `https://wa.me/${whatsapp}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+}
+
+/**
+ * Menampilkan form untuk mengedit data penghuni.
+ * @param {HTMLElement} button - Tombol edit yang diklik.
+ */
+function handleEditClick(button) {
+    const kamarId = button.dataset.kamar;
+    const residentData = databaseData.penghuni.find(p => p.kamar === kamarId);
+
+    if (residentData) {
+        // Panggil fungsi yang merender form dengan data yang sudah ada
+        renderDatabaseForm(document.getElementById('content-area'), residentData);
+    } else {
+        showCustomAlert('Data penghuni tidak ditemukan.');
+    }
+}
+
+/**
+ * Fungsi BARU untuk merender form edit/tambah data penghuni.
+ * @param {HTMLElement} contentArea - Elemen tempat form akan ditampilkan.
+ * @param {object} [dataToEdit=null] - Data penghuni yang akan diedit (opsional).
+ */
+// GANTIKAN FUNGSI LAMA DENGAN YANG INI DI script.js
+function renderDatabaseForm(contentArea, data) {
+    const initialStatus = data.nama ? 'Tidak Tersedia' : 'Tersedia';
+
+    const formHtml = `
+        <div class="database-form-container">
+            <h3 style="text-align: center; font-size: 1.5em; margin-bottom: 25px;">Edit Status Kamar ${data.kamar}</h3>
+            <div class="konfirmasi-actions">
+                <button type="button" class="konfirmasi-btn tidak-tersedia ${initialStatus === 'Tidak Tersedia' ? 'active-status' : ''}" data-status="Tidak Tersedia">Ada Penghuni</button>
+                <button type="button" class="konfirmasi-btn destructive-btn ${initialStatus === 'Tersedia' ? 'active-status' : ''}" data-status="Tersedia">Tidak Ada Penghuni</button>
+            </div>
+            <div id="dynamic-form-content" style="margin-top: 30px;"></div>
+        </div>`;
+    contentArea.innerHTML = formHtml;
+
+    const renderFormContent = (status) => {
+        const container = document.getElementById('dynamic-form-content');
+        if (status === 'Tersedia') {
+            // Bagian untuk mengosongkan kamar (tidak perlu diubah)
+            container.innerHTML = `
+                <div class="empty-state-card" style="margin-top: 0; padding: 30px; border: 2px dashed #e74c3c; box-shadow: none;">
+                    <i class="fas fa-exclamation-triangle icon" style="font-size: 3.5em; color: #e74c3c;"></i>
+                    <h4 class="title" style="font-size: 1.6em; color: #c0392b;">Konfirmasi Pengosongan Kamar</h4>
+                    <p class="message" style="max-width: 350px; margin: 10px auto;">Anda akan menghapus semua data penghuni. Status kamar akan diubah menjadi **Tersedia**.</p>
+                    <p class="message" style="font-weight: 700; color: #c0392b; margin-top:10px;">Tindakan ini tidak dapat dibatalkan.</p>
+                    <div class="form-actions" style="justify-content: center; margin-top: 25px;">
+                        <button type="button" id="apply-empty-btn" class="form-btn destructive-btn"><i class="fas fa-trash-alt"></i> Ya, Kosongkan Data</button>
+                        <button type="button" id="form-cancel-btn" class="form-btn safe-btn">Batal</button>
+                    </div>
+                </div>`;
+            
+            document.getElementById('apply-empty-btn').addEventListener('click', (e) => {
+                handleFormSubmit({ kamar: data.kamar }, true, e.currentTarget);
+            });
+            document.getElementById('form-cancel-btn').addEventListener('click', () => renderDatabaseContent(contentArea));
+
+        } else { // Status 'Tidak Tersedia' (Ada Penghuni)
+            let jatuhTempoValue = data.jatuhTempo ? new Date(data.jatuhTempo).toISOString().split('T')[0] : '';
+            container.innerHTML = `
+                <form id="database-form" class="database-form">
+                    <h4 style="text-align:center; margin-bottom:20px; color: var(--primary-color);">Edit Data Penghuni</h4>
+                    <input type="hidden" name="kamar" value="${data.kamar || ''}">
+                    <input type="hidden" name="statusKamar" value="Tidak Tersedia">
+                    
+                    <label for="form-nama">Nama Lengkap:</label>
+                    <input type="text" id="form-nama" name="nama" value="${data.nama || ''}" required>
+
+                    <label for="form-nik">NIK KTP (16 Angka):</label>
+                    <input type="text" id="form-nik" name="nik" value="${data.nik || ''}" maxlength="16" pattern="[0-9]{16}" title="Harus 16 digit angka">
+
+                    <label for="form-foto-ktp">Upload/Ganti Foto KTP:</label>
+                    <input type="file" id="form-foto-ktp" name="fotoKtp" accept="image/*" style="padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; width: 100%; box-sizing: border-box; background-color: #f8f8f8;">
+                    ${data.fotoKtpUrl ? `<small>Sudah ada KTP. Upload baru untuk mengganti.</small>` : ''}
+
+                    <label for="form-whatsapp">Nomor WhatsApp:</label>
+                    <input type="tel" id="form-whatsapp" name="whatsapp" value="${data.whatsapp || ''}" placeholder="Contoh: 081234567890">
+                    
+                    <label for="form-ttl">Tempat, Tanggal Lahir:</label>
+                    <input type="text" id="form-ttl" name="ttl" value="${data.ttl || ''}" placeholder="Contoh: Jakarta, 17 Agustus 1990">
+                    
+                    <label for="form-alamat">Alamat Asal:</label>
+                    <input type="text" id="form-alamat" name="alamat" value="${data.alamat || ''}" placeholder="Sesuai KTP">
+                    
+                    <label for="form-status">Status:</label>
+                    <select id="form-status" name="status" required>
+                        <option value="">-- Pilih Status --</option>
+                        <option value="Mahasiswa" ${data.status === 'Mahasiswa' ? 'selected' : ''}>Mahasiswa</option>
+                        <option value="Bekerja" ${data.status === 'Bekerja' ? 'selected' : ''}>Bekerja</option>
+                        <option value="Lainnya" ${data.status === 'Lainnya' ? 'selected' : ''}>Lainnya</option>
+                    </select>
+
+                    <label for="form-nominal">Nominal Pembayaran (Rp):</label>
+                    <input type="text" id="form-nominal" name="nominal" value="${data.nominal || ''}" required>
+
+                    <label for="form-jatuh-tempo">Jatuh Tempo:</label>
+                    <input type="date" id="form-jatuh-tempo" name="jatuhTempo" value="${jatuhTempoValue}" required>
+
+                    <div class="form-actions">
+                        <button type="submit" class="form-btn">Simpan Perubahan</button>
+                        <button type="button" id="form-cancel-btn" class="form-btn cancel">Batal</button>
+                    </div>
+                </form>`;
+            
+            // Validasi input NIK agar hanya angka
+            const nikInput = document.getElementById('form-nik');
+            if(nikInput) {
+                nikInput.addEventListener('input', () => {
+                    nikInput.value = nikInput.value.replace(/[^0-9]/g, '');
+                });
+            }
+
+            document.getElementById('form-cancel-btn').addEventListener('click', () => renderDatabaseContent(contentArea));
+        }
+    };
+    
+    // Logika untuk tombol toggle (tidak perlu diubah)
+    const konfirmasiBtns = document.querySelectorAll('.konfirmasi-btn');
+    konfirmasiBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            konfirmasiBtns.forEach(b => b.classList.remove('active-status'));
+            e.currentTarget.classList.add('active-status');
+            renderFormContent(e.currentTarget.dataset.status);
+        });
+    });
+    
+    renderFormContent(initialStatus);
+}
+
+/**
+ * Menangani proses pengiriman data form ke Google Apps Script.
+ * Fungsi ini sudah mencakup logika untuk file KTP (opsional).
+ */
+// GANTIKAN FUNGSI INI DI script.js
+async function handleFormSubmit(eventOrData, isEmptying = false, buttonEl = null) {
+    // Mencegah event default jika berasal dari form submit
+    if (eventOrData && eventOrData.target) {
+        eventOrData.preventDefault();
+    }
+
+    let originalButtonText = buttonEl ? buttonEl.innerHTML : 'Simpan Perubahan';
+    if (buttonEl) {
+        buttonEl.disabled = true;
+        buttonEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append('action', 'update'); // Action untuk Google Script
+        formData.append('sheet', 'penghuni'); // Nama sheet target
+
+        if (isEmptying) {
+            // Logika untuk mengosongkan kamar
+            formData.append('kamar', eventOrData.kamar);
+            formData.append('nama', '');
+            formData.append('nik', '');
+            formData.append('fotoKtpUrl', '');
+            formData.append('whatsapp', '');
+            formData.append('ttl', '');
+            formData.append('alamat', '');
+            formData.append('status', '');
+            formData.append('jatuhTempo', '');
+            formData.append('nominal', '');
+            formData.append('statusKamar', 'Tersedia');
+        } else {
+            // Logika untuk mengisi data penghuni dari form
+            const form = eventOrData.target;
+            const fileInput = form.querySelector('#form-foto-ktp');
+
+            // Ambil semua data dari form
+            formData.append('kamar', form.querySelector('[name="kamar"]').value);
+            formData.append('nama', form.querySelector('[name="nama"]').value);
+            formData.append('nik', form.querySelector('[name="nik"]').value);
+            formData.append('whatsapp', form.querySelector('[name="whatsapp"]').value);
+            formData.append('ttl', form.querySelector('[name="ttl"]').value);
+            formData.append('alamat', form.querySelector('[name="alamat"]').value);
+            formData.append('status', form.querySelector('[name="status"]').value);
+            formData.append('jatuhTempo', form.querySelector('[name="jatuhTempo"]').value);
+            formData.append('nominal', form.querySelector('[name="nominal"]').value);
+            formData.append('statusKamar', form.querySelector('[name="statusKamar"]').value);
+
+            // Cek apakah ada file yang di-upload
+            if (fileInput.files.length > 0) {
+                formData.append('fotoKtp', fileInput.files[0]);
+            }
+        }
+        
+        // Kirim data ke API
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            body: formData, // Langsung kirim objek FormData
+        });
+
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.message || 'Terjadi kesalahan di server.');
+        }
+        
+        showCustomAlert(result.message || 'Data berhasil disimpan!');
+        // Panggil kembali fungsi untuk me-render database agar data ter-update
+        renderDatabaseContent(document.getElementById('content-area'));
+
+    } catch (error) {
+        console.error('Error saat mengirim form:', error);
+        showCustomAlert(`Gagal menyimpan data: ${error.message}`);
+    } finally {
+        if (buttonEl) {
+            buttonEl.disabled = false;
+            buttonEl.innerHTML = originalButtonText;
+        }
+    }
+}
+
+/**
+ * Fungsi pembantu yang khusus menangani pengiriman data ke server API.
+ * PENTING: Fungsi ini harus diletakkan di luar fungsi lain, di level global.
+ */
+async function sendDataToServer(data, buttonEl) {
+    let originalButtonText = buttonEl ? buttonEl.innerHTML : 'Simpan Perubahan';
+
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            body: new URLSearchParams(data)
+        });
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.message);
+        }
+        showCustomAlert(result.message);
+        renderDatabaseContent(document.getElementById('content-area'));
+    } catch (error) {
+        showCustomAlert(`Gagal menyimpan data: ${error.message}`);
+    } finally {
+        // Kode ini akan selalu dijalankan, baik sukses maupun gagal.
+        if (buttonEl) {
+            buttonEl.disabled = false;
+            buttonEl.innerHTML = originalButtonText;
+        }
+    }
+}
+
+
+function displayContent(pageId) {
+    currentPageId = pageId;
+    if (pageHistory[pageHistory.length - 1] !== pageId) {
+        pageHistory.push(pageId);
+    }
+    // Cukup beri tahu browser bahwa ada navigasi, tanpa data detail
+    history.pushState({ navigated: true }, '', `#${pageId}`);
+
+    const mainScreen = document.getElementById('main-screen');
+    const dynamicContent = document.getElementById('dynamic-content');
+    const contentArea = document.getElementById('content-area');
+    contentArea.innerHTML = '';
+
+    // Pastikan mainScreen disembunyikan dengan benar
+    mainScreen.style.opacity = '0';
+    mainScreen.style.transform = 'translateX(-100%)';
+    setTimeout(() => {
+        mainScreen.style.display = 'none';
+        dynamicContent.style.display = 'flex';
+        setTimeout(() => {
+            dynamicContent.style.opacity = '1';
+            dynamicContent.style.transform = 'translateX(0)';
+        }, 50);
+    }, 400);
+
+    const pageRenderers = {
+        'tentang-kos': () => {
+            contentArea.innerHTML = document.getElementById('tentang-kos-content').innerHTML;
+            setupTentangKosTabs();
+        },
+        'datasheet-view': () => renderDataSheetContent(contentArea),
+        'cctv-live': () => contentArea.innerHTML = document.getElementById('cctv-live-content').innerHTML,
+        'aturan-kost': () => contentArea.innerHTML = document.getElementById('aturan-kost-content').innerHTML,
+        'database': () => renderDatabaseContent(contentArea),
+        'informasi': () => contentArea.innerHTML = document.getElementById('informasi-content').innerHTML,
+        'daftar-penghuni-readonly': () => renderViewOnlyDatabase(contentArea),
+        'daftar-kamar-readonly': () => renderViewOnlyRooms(contentArea),
+        'password-wifi': () => contentArea.innerHTML = document.getElementById('password-wifi-content').innerHTML,
+        'cctv': () => renderCctvContent(contentArea),
+        'server': () => renderServerContent(contentArea),
+        'tagihan-listrik': () => renderTagihanListrik(contentArea),
+        'iuran-listrik-readonly': () => renderIuranListrikReadOnly(contentArea),
+        'live-chat': () => renderLiveChatForm(contentArea),
+        // Tambahkan halaman generate pembayaran di sini agar bisa diakses oleh displayContent
+        'generate-pembayaran-content': () => contentArea.innerHTML = document.getElementById('generate-pembayaran-content').innerHTML,
+    };
+
+    const renderFunction = pageRenderers[pageId] || (() => {
+        contentArea.innerHTML = `<h3>Halaman Tidak Ditemukan</h3>`;
+    });
+    renderFunction();
+}
+
+function formatRupiah(number) {
+    if (!number) return '0';
+    if (typeof number === 'string') {
+        number = number.replace(/\./g, '');
+    }
+    return new Intl.NumberFormat('id-ID').format(number);
+}
+
+function updateRealtimeDisplay() {
+    document.getElementById('realtime-display').textContent = new Date().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'long' });
+}
+
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    // Coba parsing dengan format yang lebih fleksibel
+    const date = new Date(dateString);
+    if (isNaN(date)) {
+        // Jika parsing gagal, coba format lain atau kembalikan string asli
+        const parts = dateString.split('-');
+        if (parts.length === 3) {
+            // Asumsikan YYYY-MM-DD
+            return new Date(parts[0], parts[1] - 1, parts[2]).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
+        return dateString; // Kembalikan apa adanya jika format tidak dikenali
+    }
+    return date.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+
+function showCustomAlert(message) {
+    const alert = document.getElementById('custom-alert-backdrop');
+    alert.querySelector('.alert-message').textContent = message;
+    alert.classList.remove('hidden');
+    alert.classList.add('show');
+}
+
+function setupPasswordToggle() {
+    const toggle = document.querySelector('.toggle-password');
+    toggle.addEventListener('click', function() {
+        const input = document.getElementById('password-input');
+        input.type = input.type === 'password' ? 'text' : 'password';
+        this.textContent = this.textContent === 'Lihat' ? 'Sembunyikan' : 'Lihat';
+    });
+}
+
+function handleCopyClick(target) {
+    const targetId = target.closest('.copy-btn').dataset.target;
+    copyToClipboard(document.getElementById(targetId).textContent);
+}
+
+async function copyToClipboard(text) {
+    try {
+        await navigator.clipboard.writeText(text);
+        const notification = document.getElementById('copy-success-notification');
+        notification.classList.remove('hidden');
+        notification.classList.add('show');
+        setTimeout(() => notification.classList.remove('show'), 1500);
+    } catch (err) {
+        showCustomAlert('Gagal menyalin.');
+    }
+}
+
+// GANTI SELURUH FUNGSI renderDatabaseContent ANDA DENGAN INI
+async function renderDatabaseContent(contentArea) {
+    contentArea.innerHTML = getProgressLoaderHtml('Memuat Database Admin....');
+    
+    const bar = document.getElementById('progress-bar-inner');
+    const percentageText = document.getElementById('progress-percentage');
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += Math.floor(Math.random() * 10) + 5;
+        if (progress >= 95) {
+            progress = 95;
+            clearInterval(interval);
+        }
+        if(bar) bar.style.width = progress + '%';
+        if(percentageText) percentageText.textContent = progress + '%';
+    }, 150);
+
+    try {
+        const response = await fetch(`${API_URL}?action=read`);
+        const result = await response.json();
+        if (!result.success || !result.data || !result.data.penghuni) {
+            throw new Error(result.message || 'Gagal mengambil data dari server');
+        }
+        databaseData.penghuni = result.data.penghuni;
+
+        let html = `
+            <div class="database-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h3 style="color: var(--primary-color); margin: 0;">Database Penghuni Kost</h3>
+                <div>
+                    <button id="datasheet-btn" class="form-btn datasheet-btn" data-page="datasheet-view"><i class="fas fa-file-excel"></i> Data Sheet</button>
+                    <button id="refresh-data-btn" class="form-btn refresh-btn"><i class="fas fa-sync-alt"></i> Refresh</button>
+                </div>
+            </div>`;
+
+        databaseData.penghuni.forEach(data => {
+            const isOwnerRoom = data.kamar === 'A1';
+            const isAvailable = data.statusKamar === 'Tersedia';
+            let cardClass = isOwnerRoom ? 'owner-room' : (isAvailable ? 'available-room' : '');
+
+            if (isOwnerRoom) {
+                // Tampilan Kartu Pemilik (A1)
+                html += `
+                    <div class="database-card ${cardClass}" data-kamar="${data.kamar}">
+                        <h4>Kamar ${data.kamar} - ${data.nama}</h4>
+                        <div class="database-detail-item"><span>No. WhatsApp</span><span class="database-value" style="color: var(--accent-color); font-weight: 600;">Terkonfirmasi!</span></div>
+                        <div class="database-detail-item"><span>Status Pembayaran</span><span class="database-value status-lunas"><i class="fas fa-check-circle"></i> Lunas</span></div>
+                        <div class="database-detail-item"><span>Status Kamar</span><span class="database-value status-menunggak"><i class="fas fa-times-circle"></i> Tidak Disewakan!</span></div>
+                    </div>`;
+            } 
+            else if (isAvailable) {
+                // Tampilan ringkas untuk kamar KOSONG
+                html += `
+                    <div class="database-card ${cardClass}" data-kamar="${data.kamar}">
+                        <h4>Kamar ${data.kamar} - <i>Kosong</i></h4>
+                        <div class="database-detail-item">
+                            <span>Status Pembayaran</span>
+                            <span class="database-value" style="color: #f39c12; font-size: 1.2em;" title="Tidak berlaku untuk kamar kosong">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </span>
+                        </div>
+                        <div class="database-detail-item">
+                            <span>Status Kamar</span>
+                            <span class="database-value status-tersedia"><i class="fas fa-check-circle"></i> ${data.statusKamar}</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="form-btn edit-btn" data-kamar="${data.kamar}"><i class="fas fa-edit"></i> Edit</button>
+                        </div>
+                    </div>`;
+            } else {
+                // Tampilan untuk kamar yang DIHUNI dengan TATA LETAK BARU
+                const fotoKtpHtml = `
+                    <div class="database-detail-item">
+                        <span>ID KTP (Foto KTP)</span>
+                        <span class="database-value">
+                            ${data.fotoKtpUrl ? `<a href="#" class="view-ktp-btn" style="color: var(--accent-color); font-weight: 600;" data-url="${data.fotoKtpUrl}">(Lihat KTP)</a>` : '<span>-</span>'}
+                        </span>
+                    </div>`;
+
+                let statusOtomatis = 'Lunas';
+                if (data.jatuhTempo && typeof data.jatuhTempo === 'string') {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const parts = data.jatuhTempo.split('-');
+                    const jatuhTempo = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                    if (jatuhTempo < today) {
+                        statusOtomatis = 'Belum Bayar';
+                    }
+                }
+                let statusClass = (statusOtomatis === 'Lunas') ? 'status-lunas' : 'status-menunggak';
+                let statusIcon = (statusOtomatis === 'Lunas') ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle';
+                const statusPembayaranHtml = `
+                    <div class="database-detail-item">
+                        <span>Status Pembayaran</span>
+                        <span class="database-value ${statusClass}">
+                            <i class="${statusIcon}"></i> ${statusOtomatis}
+                        </span>
+                    </div>`;
+                
+                html += `
+                    <div class="database-card ${cardClass}" data-kamar="${data.kamar}">
+                        <h4 style="line-height: 1.3; margin-bottom: 20px;">
+                            Kamar ${data.kamar} - ${data.nama}<br>
+                            <span style="font-weight: normal; font-size: 0.9em;">NIK: ${data.nik || '-'}</span>
+                        </h4>
+                        
+                        <!-- Detail Pribadi -->
+                        ${fotoKtpHtml}
+                        <div class="database-detail-item"><span>No. WhatsApp</span><span class="database-value whatsapp-number">${data.whatsapp || '-'}</span></div>
+                        <div class="database-detail-item"><span>Tempat, Tanggal Lahir</span><span class="database-value">${data.ttl || '-'}</span></div>
+                        <div class="database-detail-item"><span>Alamat</span><span class="database-value">${data.alamat || '-'}</span></div>
+                        <div class="database-detail-item"><span>Status</span><span class="database-value">${data.status || '-'}</span></div>
+
+                        <!-- Garis Pemisah -->
+                        <hr style="border: none; height: 1px; background-image: linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,0.1), rgba(0,0,0,0)); margin: 15px 0;">
+
+                        <!-- Detail Pembayaran -->
+                        <div class="database-detail-item"><span>Jumlah Pembayaran</span><span class="database-value">Rp ${formatRupiah(data.nominal || '0')}</span></div>
+                        ${statusPembayaranHtml}
+                        <div class="database-detail-item"><span>Jatuh Tempo</span><span class="database-value">${formatDate(data.jatuhTempo)}</span></div>
+                        <div class="database-detail-item"><span>Status Kamar</span><span class="database-value status-tidak-tersedia"><i class="fas fa-times-circle"></i> ${data.statusKamar}</span></div>
+                        
+                        <!-- Tombol Aksi -->
+                        <div class="card-actions">
+                            <button class="form-btn generate-btn" data-nama="${data.nama}" data-kamar="${data.kamar}" data-nominal="${data.nominal}" data-jatuh-tempo="${data.jatuhTempo}" data-whatsapp="${data.whatsapp || ''}"><i class="fas fa-receipt"></i> e-Kwitansi</button>
+                            <button class="form-btn reminder-btn" data-nama="${data.nama}" data-kamar="${data.kamar}" data-nominal="${data.nominal}" data-jatuh-tempo="${data.jatuhTempo}" data-whatsapp="${data.whatsapp || ''}"><i class="fas fa-bell"></i></button>
+                            <button class="form-btn edit-btn" data-kamar="${data.kamar}"><i class="fas fa-edit"></i> Edit</button>
+                        </div>
+                    </div>`;
+            }
+        });
+        
+        clearInterval(interval);
+        if(bar) bar.style.width = '100%';
+        if(percentageText) percentageText.textContent = '100%';
+        
+        setTimeout(() => {
+            contentArea.innerHTML = html;
+        }, 300);
+
+    } catch (error) {
+        clearInterval(interval);
+        contentArea.innerHTML = `<div class="error-message">Gagal memuat data. Silakan coba lagi. <br><small>${error.message}</small></div>`;
+    }
+}
+
+
+
+
+
+
+// ===============================================
+// =========== DAFTAR PENGHUNI KOS ==============
+// ===============================================
+
+async function renderViewOnlyDatabase(contentArea) {
+    contentArea.innerHTML = getProgressLoaderHtml('Memuat Penghuni Kos...');
+    const bar = document.getElementById('progress-bar-inner');
+    const percentageText = document.getElementById('progress-percentage');
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += Math.floor(Math.random() * 10) + 5;
+        if (progress >= 95) {
+            progress = 95;
+            clearInterval(interval);
+        }
+        bar.style.width = progress + '%';
+        percentageText.textContent = progress + '%';
+    }, 150);
+    try {
+        const response = await fetch(`${API_URL}?action=read`);
+        const result = await response.json();
+        if (!result.success || !result.data || !result.data.penghuni) {
+            throw new Error(result.message || 'Format data dari server salah.');
+        }
+        
+        const penghuniData = result.data.penghuni;
+        let databaseHtml = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <button id="refresh-data-btn" class="form-btn refresh-btn" style="margin-top: 0;"><i class="fas fa-sync-alt"></i> Refresh Data</button>
+                <h3 style="color: var(--primary-color); margin: 0;">Daftar Penghuni Kost</h3>
+            </div>
+            <p>Berikut adalah daftar semua penghuni kost.</p>`;
+
+        if (penghuniData.length > 0) {
+            penghuniData.forEach(data => {
+                const isOwnerRoom = data.kamar === 'A1';
+
+                if (isOwnerRoom) {
+                    // KEMBALIKAN KARTU KHUSUS UNTUK PEMILIK
+                    databaseHtml += `
+                        <div class="database-card owner-room">
+                            <h4><i class="fas fa-user-tie"></i> Kamar A1 - Pemilik</h4>
+                            <div class="database-detail-item"><span>Status</span><span class="database-value">Tidak Disewakan</span></div>
+                        </div>`;
+                } else {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const jatuhTempo = new Date(data.jatuhTempo);
+                    let statusOtomatis = jatuhTempo < today ? 'Belum Bayar' : 'Lunas';
+                    let statusClass = jatuhTempo < today ? 'status-menunggak' : 'status-lunas';
+                    let statusIcon = jatuhTempo < today ? 'fas fa-exclamation-triangle' : 'fas fa-check-circle';
+                    const isAvailable = data.statusKamar === 'Tersedia';
+                    const kamarStatusClass = isAvailable ? 'status-tersedia' : 'status-tidak-tersedia';
+                    const kamarStatusIcon = isAvailable ? 'fas fa-check-circle' : 'fas fa-times-circle';
+
+                    databaseHtml += `
+                        <div class="database-card" data-kamar="${data.kamar}">
+                            <h4><i class="fas fa-user"></i> Kamar ${data.kamar} - ${data.nama || ''}</h4>
+                            <div class="database-detail-item"><span>No. WhatsApp</span><span class="database-value whatsapp-number">Tersembunyi...</span></div>
+                            <div class="database-detail-item"><span>Status Pembayaran</span><span class="database-value ${statusClass}"><i class="${statusIcon}"></i> ${statusOtomatis}</span></div>
+                            <div class="database-detail-item"><span>Nominal Pembayaran</span><span class="database-value">Rp ${formatRupiah(data.nominal || '0')}</span></div>
+                            <div class="database-detail-item"><span>Jatuh Tempo</span><span class="database-value">${formatDate(data.jatuhTempo)}</span></div>
+                            <div class="database-detail-item"><span>Status Kamar</span><span class="database-value ${kamarStatusClass}"><i class="${kamarStatusIcon}"></i> ${data.statusKamar || 'Tidak Ada Data'}</span></div>
+                        </div>`;
+                }
+            });
+        } else {
+            databaseHtml += `<p style="text-align: center; color: var(--light-text-color);">Tidak ada data penghuni yang ditemukan.</p>`;
+        }
+        contentArea.innerHTML = databaseHtml;
+        document.getElementById('refresh-data-btn').addEventListener('click', () => renderViewOnlyDatabase(contentArea));
+    } catch (error) {
+        contentArea.innerHTML = `<p style="text-align: center; color: var(--light-text-color);">Gagal memuat data penghuni. ${error.message}</p>`;
+    }
+}
+
+
+// ===============================================
+// ============== DAFTAR KAMAR KOS ===============
+// ===============================================
+async function renderViewOnlyRooms(contentArea) {
+    contentArea.innerHTML = getProgressLoaderHtml('Memuat Daftar Kamar Kos...');
+    const bar = document.getElementById('progress-bar-inner');
+    const percentageText = document.getElementById('progress-percentage');
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += Math.floor(Math.random() * 10) + 5;
+        if (progress >= 95) {
+            progress = 95;
+            clearInterval(interval);
+        }
+        bar.style.width = progress + '%';
+        percentageText.textContent = progress + '%';
+    }, 150);
+    try {
+        const response = await fetch(`${API_URL}?action=read&sheet=penghuni`);
+        const result = await response.json();
+        if (!result.success || !result.data || !result.data.penghuni) {
+            throw new Error(result.message || 'Format data dari server salah.');
+        }
+
+        const occupiedRooms = result.data.penghuni.reduce((acc, current) => {
+            if (current.statusKamar !== 'Tersedia') {
+                acc[current.kamar] = current;
+            }
+            return acc;
+        }, {});
+
+        let roomsHtml = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <button id="refresh-data-btn" class="form-btn refresh-btn" style="margin-top: 0;"><i class="fas fa-sync-alt"></i> Refresh Data</button>
+                <h3 style="color: var(--primary-color); margin: 0;">Daftar Kamar Kost</h3>
+            </div>
+            <p>Berikut adalah daftar semua kamar beserta status ketersediaannya.</p>
+            <div class="rooms-grid">`;
+
+        allRooms.forEach(roomNumber => {
+            const roomData = occupiedRooms[roomNumber];
+            const isOwnerRoom = roomNumber === 'A1';
+
+            if (isOwnerRoom) {
+                // KEMBALIKAN KARTU KHUSUS UNTUK KAMAR PEMILIK
+                roomsHtml += `
+                    <div class="room-card owner-room">
+                        <div class="room-header">
+                            <i class="fas fa-key room-icon"></i>
+                            <h4 class="room-number">${roomNumber}</h4>
+                        </div>
+                        <p class="room-status">Kamar Pemilik</p>
+                    </div>`;
+            } else if (roomData) {
+                // Tampilan untuk kamar yang dihuni
+                roomsHtml += `
+                    <div class="room-card occupied-room">
+                        <div class="room-header">
+                            <i class="fas fa-bed room-icon"></i>
+                            <h4 class="room-number">Kamar ${roomNumber}</h4>
+                        </div>
+                        <p class="room-status"><i class="fas fa-times-circle"></i>Dihuni oleh: ${roomData.nama}</p>
+                    </div>`;
+            } else {
+                // Tampilan untuk kamar yang tersedia
+                roomsHtml += `
+                    <div class="room-card available-room" data-room="${roomNumber}">
+                        <div class="room-header">
+                            <i class="fas fa-bed room-icon"></i>
+                            <h4 class="room-number">Kamar ${roomNumber}</h4>
+                        </div>
+                        <p class="room-status"><i class="fas fa-check-circle"></i>Tersedia</p>
+                        <button class="book-now-btn">Booking Sekarang</button>
+                    </div>`;
+            }
+        });
+
+        roomsHtml += `</div>`;
+        contentArea.innerHTML = roomsHtml;
+        
+        document.querySelectorAll('.book-now-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                showBookingModal(e.target.closest('.room-card').dataset.room);
+            });
+        });
+        document.getElementById('refresh-data-btn').addEventListener('click', () => renderViewOnlyRooms(contentArea));
+
+    } catch (error) {
+        contentArea.innerHTML = `<p style="text-align: center; color: var(--light-text-color);">Gagal memuat data kamar. ${error.message}</p>`;
+    }
+}
+
+
+// ===============================================
+// ============== DAFTAR VIEW ONLY DATABASE ===============
+// ===============================================
+// GANTI SELURUH FUNGSI renderViewOnlyDatabase ANDA DENGAN INI
+async function renderViewOnlyDatabase(contentArea) {
+    contentArea.innerHTML = getProgressLoaderHtml('Memuat Penghuni Kost....');
+    const bar = document.getElementById('progress-bar-inner');
+    const percentageText = document.getElementById('progress-percentage');
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += Math.floor(Math.random() * 10) + 5;
+        if (progress >= 95) {
+            progress = 95;
+            clearInterval(interval);
+        }
+        bar.style.width = progress + '%';
+        percentageText.textContent = progress + '%';
+    }, 150);
+    try {
+        const response = await fetch(`${API_URL}?action=read`);
+        const result = await response.json();
+        if (!result.success || !result.data || !result.data.penghuni) {
+            throw new Error(result.message || 'Format data dari server salah.');
+        }
+        
+        const penghuniData = result.data.penghuni;
+        let databaseHtml = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h3 style="color: var(--primary-color); margin: 0;">Daftar Penghuni Kost</h3>
+                <button id="refresh-data-btn" class="form-btn refresh-btn"><i class="fas fa-sync-alt"></i> Refresh</button>
+            </div>
+            <p>Berikut adalah daftar semua penghuni kost yang aktif.</p>`;
+
+        if (penghuniData.length > 0) {
+            penghuniData.forEach(data => {
+                const isOwnerRoom = data.kamar === 'A1';
+                const isAvailable = data.statusKamar === 'Tersedia';
+
+                if (isOwnerRoom) {
+                    databaseHtml += `
+                        <div class="database-card owner-room">
+                            <h4><i class="fas fa-user-tie"></i> Kamar A1 - Pemilik</h4>
+                            <div class="database-detail-item"><span>Status</span><span class="database-value">Tidak Disewakan</span></div>
+                        </div>`;
+                } else if (isAvailable) {
+                    // Kamar kosong tidak ditampilkan di halaman publik ini
+                    return; 
+                } else {
+                    let statusOtomatis = 'Lunas';
+                    if (data.jatuhTempo && typeof data.jatuhTempo === 'string') {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const parts = data.jatuhTempo.split('-');
+                        const jatuhTempo = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                        if (jatuhTempo < today) {
+                            statusOtomatis = 'Belum Bayar';
+                        }
+                    }
+
+                    let statusClass = statusOtomatis === 'Lunas' ? 'status-lunas' : 'status-menunggak';
+                    let statusIcon = statusOtomatis === 'Lunas' ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle';
+
+                    databaseHtml += `
+                        <div class="database-card" data-kamar="${data.kamar}">
+                            <h4><i class="fas fa-user"></i> Kamar ${data.kamar} - ${data.nama}</h4>
+                            <div class="database-detail-item"><span>No. WhatsApp</span><span class="database-value whatsapp-number">Tersembunyi...</span></div>
+                            <div class="database-detail-item"><span>Status Pembayaran</span><span class="database-value ${statusClass}"><i class="${statusIcon}"></i> ${statusOtomatis}</span></div>
+                            <!-- ================== PERUBAHAN DI SINI ================== -->
+                            <div class="database-detail-item"><span>Nominal Pembayaran</span><span class="database-value">Tersembunyi...</span></div>
+                            <div class="database-detail-item"><span>Jatuh Tempo</span><span class="database-value">${formatDate(data.jatuhTempo)}</span></div>
+                        </div>`;
+                }
+            });
+        } else {
+            databaseHtml += `<p style="text-align: center; color: var(--light-text-color);">Tidak ada data penghuni yang ditemukan.</p>`;
+        }
+        contentArea.innerHTML = databaseHtml;
+    } catch (error) {
+        contentArea.innerHTML = `<p style="text-align: center; color: var(--light-text-color);">Gagal memuat data penghuni. ${error.message}</p>`;
+    }
+}
+
+
+
+
+// ===============================================
+// ============== DATA TAGIHAN LISTRIK ===============
+// ===============================================
+function renderTagihanListrik(contentArea) {
+    // 1. Salin template HTML ke area konten
+    contentArea.innerHTML = document.getElementById('tagihan-listrik-content').innerHTML;
+    
+    // 2. Tambahkan event listener ke tab filter yang baru saja ditampilkan
+    const filterTabs = document.getElementById('electricity-filter-tabs');
+    if (filterTabs) {
+        filterTabs.addEventListener('click', (e) => {
+            const button = e.target.closest('.tab-button');
+            if (button) {
+                document.querySelectorAll('#electricity-filter-tabs .tab-button').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                
+                const filterKey = button.dataset.filter.replace('kamar', '');
+                const listArea = document.getElementById('electricity-bill-list');
+                
+                // Panggil fungsi untuk memuat data sesuai tab yang diklik
+                renderFilteredElectricityBills(listArea, filterKey);
+            }
+        });
+    }
+}
+
+async function renderFilteredElectricityBills(contentArea, filterKey) {
+    contentArea.innerHTML = getProgressLoaderHtml('Memuat Data Iuran Listrik...');
+    const bar = document.getElementById('progress-bar-inner');
+    const percentageText = document.getElementById('progress-percentage');
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += Math.floor(Math.random() * 10) + 5;
+        if (progress >= 95) {
+            progress = 95;
+            clearInterval(interval);
+        }
+        bar.style.width = progress + '%';
+        percentageText.textContent = progress + '%';
+    }, 150);
+    try {
+        const response = await fetch(`${API_URL}?action=read&sheet=penghuni`);
+        const result = await response.json();
+        if (!result.success) throw new Error(result.message);
+
+        const electricityData = result.data.penghuni;
+        const filteredData = electricityData.filter(data => data.kamar.startsWith(filterKey));
+
+        let electricityHtml = ``;
+        if (filteredData.length > 0) {
+            filteredData.forEach(data => {
+                if (data.statusKamar === 'Tersedia') {
+                    electricityHtml += `
+                        <div class="database-card" data-kamar="${data.kamar}" style="background-color: #f8f9fa; border-left: 5px solid #6c757d;">
+                            <h4>Kamar ${data.kamar}</h4>
+                            <div class="database-detail-item">
+                                <span style="font-weight: 600; color: #28a745;">Kamar ini sedang tidak dihuni.</span>
+                            </div>
+                            <div class="database-detail-item"><span>Iuran Listrik</span><span class="database-value">-</span></div>
+                            <div class="database-detail-item"><span>Status Tagihan</span><span class="database-value">-</span></div>
+                        </div>`;
+                } else {
+                    const iuranListrik = parseInt(data.iuranListrik) || 0;
+                    const totalTagihan = parseInt(data.nominal) || 0;
+                    const statusIcon = data.statusTagihan === 'Lunas' ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle';
+                    const statusClass = data.statusTagihan === 'Lunas' ? 'status-lunas' : 'status-menunggak';
+
+                    let jumlahBulanHtml = '';
+                    if (data.statusTagihan === 'Menunggak' && data.jumlahBulan > 0) {
+                        jumlahBulanHtml = `
+                            <div class="database-detail-item">
+                                <span>Jumlah Bulan</span>
+                                <span class="database-value" style="color: #e74c3c;">${data.jumlahBulan} bulan</span>
+                            </div>`;
+                    }
+                    
+                    // PENAMBAHAN LOGIKA: Buat tombol edit hanya jika kamar bukan A1
+                    let editButtonHtml = '';
+                    if (data.kamar !== 'A1') {
+                        editButtonHtml = `
+                            <div class="card-actions">
+                                <button class="form-btn edit-btn" data-kamar="${data.kamar}"><i class="fas fa-edit"></i> Edit</button>
+                            </div>`;
+                    }
+
+                    electricityHtml += `
+                        <div class="database-card" data-kamar="${data.kamar}">
+                            <h4>Kamar ${data.kamar} - ${data.nama}</h4>
+                            <div class="database-detail-item"><span>No. WhatsApp</span><span class="database-value whatsapp-number">${data.whatsapp || 'Tidak ada'}</span></div>
+                            <div class="database-detail-item"><span>Iuran Listrik</span><span class="database-value">Rp ${formatRupiah(iuranListrik)}/bulan</span></div>
+                            <div class="database-detail-item"><span>Status Tagihan</span><span class="database-value ${statusClass}"><i class="${statusIcon}"></i> ${data.statusTagihan || 'Tidak Ada'}</span></div>
+                            ${jumlahBulanHtml}
+                            <div class="database-detail-item"><span>Total Tagihan</span><span class="database-value ${statusClass}">Rp ${formatRupiah(totalTagihan)}</span></div>
+                            ${editButtonHtml}
+                        </div>`;
+                }
+            });
+        } else {
+            electricityHtml += `<p style="text-align: center; color: var(--light-text-color);">Tidak ada data kamar di blok ini.</p>`;
+        }
+        contentArea.innerHTML = electricityHtml;
+
+        contentArea.querySelectorAll('.edit-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const kamarId = e.currentTarget.dataset.kamar;
+                const resident = electricityData.find(p => p.kamar === kamarId);
+                if (resident) {
+                    renderElectricityBillForm(document.getElementById('content-area'), resident);
+                }
+            });
+        });
+
+    } catch (error) {
+        contentArea.innerHTML = `<p style="text-align: center; color: var(--light-text-color);">Gagal memuat data. ${error.message}</p>`;
+    }
+}
+
+function renderElectricityBillForm(contentArea, data) {
+    const isMenunggak = data.statusTagihan === 'Menunggak';
+    const initialBulan = isMenunggak ? (data.jumlahBulan > 1 ? data.jumlahBulan : 2) : (data.jumlahBulan || 1);
+
+    contentArea.innerHTML = `
+        <div class="database-form-container">
+            <form id="edit-electricity-bill-form" class="database-form">
+                <h4>Edit Iuran Kamar ${data.kamar}</h4>
+                <input type="hidden" id="electricity-bill-form-kamar" name="kamar" value="${data.kamar}">
+                <label for="iuranListrik">Iuran Listrik:</label>
+                <input type="text" id="iuranListrik" name="iuranListrik" value="${data.iuranListrik || ''}" required>
+                <label for="statusTagihan">Status Tagihan:</label>
+                <select id="statusTagihan" name="statusTagihan">
+                    <option value="Lunas" ${data.statusTagihan === 'Lunas' ? 'selected' : ''}>Lunas</option>
+                    <option value="Belum Bayar" ${data.statusTagihan === 'Belum Bayar' ? 'selected' : ''}>Belum Bayar</option>
+                    <option value="Menunggak" ${isMenunggak ? 'selected' : ''}>Menunggak</option>
+                </select>
+                <div id="bulan-container" style="display: ${isMenunggak ? 'block' : 'none'};">
+                    <label for="jumlahBulan">Jumlah Bulan:</label>
+                    <input type="number" id="jumlahBulan" name="jumlahBulan" min="1" value="${initialBulan}">
+                    <small id="bulan-warning" style="color: #e74c3c; font-size: 0.8em; display: ${isMenunggak ? 'block' : 'none'}; margin-top: 5px;">
+                        Minimal 2 bulan untuk status menunggak.
+                    </small>
+                </div>
+                <input type="hidden" id="total-tagihan-hidden" name="nominal">
+
+                <div class="form-actions">
+                    <button type="submit" class="form-btn">Simpan</button>
+                    <button type="button" id="cancel-edit-bill" class="form-btn cancel">Batal</button>
+                </div>
+            </form>
+        </div>
+    `;
+
+    const statusSelect = document.getElementById('statusTagihan');
+    const bulanContainer = document.getElementById('bulan-container');
+    const iuranInput = document.getElementById('iuranListrik');
+    const bulanInput = document.getElementById('jumlahBulan');
+    const nominalHiddenInput = document.getElementById('total-tagihan-hidden');
+    const bulanWarning = document.getElementById('bulan-warning');
+
+    const updateTotal = () => {
+        const iuran = parseInt(iuranInput.value.replace(/\./g, '')) || 0;
+        const status = statusSelect.value;
+
+        if (status === 'Menunggak') {
+            bulanContainer.style.display = 'block';
+            bulanWarning.style.display = 'block';
+            bulanInput.min = '2';
+            if (parseInt(bulanInput.value) < 2) {
+                bulanInput.value = '2';
+            }
+            const bulan = parseInt(bulanInput.value) || 2;
+            nominalHiddenInput.value = iuran * bulan;
+        } else if (status === 'Belum Bayar') {
+            bulanContainer.style.display = 'none';
+            bulanWarning.style.display = 'none';
+            bulanInput.min = '1';
+            bulanInput.value = 1;
+            nominalHiddenInput.value = iuran;
+        } else { // Lunas
+            bulanContainer.style.display = 'none';
+            bulanWarning.style.display = 'none';
+            bulanInput.min = '0'; // <-- INI PERBAIKANNYA
+            bulanInput.value = 0;
+            nominalHiddenInput.value = 0;
+        }
+    };
+
+    updateTotal();
+
+    statusSelect.addEventListener('change', updateTotal);
+    iuranInput.addEventListener('input', updateTotal);
+    bulanInput.addEventListener('input', updateTotal);
+    
+    document.getElementById('cancel-edit-bill').addEventListener('click', () => {
+        displayContent('tagihan-listrik');
+    });
+}
+
+async function handleElectricityBillFormSubmit(e) {
+    e.preventDefault();
+    const form = e.target;
+    const data = {
+        action: 'update',
+        sheet: 'penghuni',
+        kamar: form.querySelector('#electricity-bill-form-kamar').value,
+        iuranListrik: form.querySelector('#iuranListrik').value,
+        statusTagihan: form.querySelector('#statusTagihan').value,
+        jumlahBulan: form.querySelector('#jumlahBulan').value,
+        nominal: form.querySelector('#total-tagihan-hidden').value,
+    };
+
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+
+    try {
+        const response = await fetch(API_URL, { 
+            method: 'POST', 
+            // Menggunakan URLSearchParams untuk mengirim data form dengan benar
+            body: new URLSearchParams(data) 
+        });
+        const result = await response.json();
+        if (!result.success) throw new Error(result.message);
+        showCustomAlert(result.message);
+        displayContent('tagihan-listrik');
+    } catch (error) {
+        showCustomAlert(`Gagal menyimpan: ${error.message}`);
+        submitButton.disabled = false;
+        submitButton.textContent = 'Simpan';
+    }
+}
+
+
+// ===============================================
+// ============== DATA TAGIHAN LISTRIK READONLY=========
+// ===============================================
+function renderIuranListrikReadOnly(contentArea) {
+    // 1. Salin template HTML ke area konten
+    contentArea.innerHTML = document.getElementById('iuran-listrik-readonly-content').innerHTML;
+
+    // 2. Tambahkan event listener ke tab filter yang baru saja ditampilkan
+    const filterTabs = document.getElementById('electricity-filter-tabs-readonly');
+    if (filterTabs) {
+        filterTabs.addEventListener('click', (e) => {
+            const button = e.target.closest('.tab-button');
+            if (button) {
+                // Hapus kelas 'active' dari semua tombol dan tambahkan ke yang diklik
+                document.querySelectorAll('#electricity-filter-tabs-readonly .tab-button').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                
+                const filterKey = button.dataset.filter; // Ambil filter (A, B, C, atau D)
+                const listArea = document.getElementById('electricity-bill-list-readonly');
+                
+                // Panggil fungsi untuk memuat data sesuai tab yang diklik
+                renderFilteredViewOnlyElectricityBills(listArea, filterKey);
+            }
+        });
+    }
+}
+
+async function renderFilteredViewOnlyElectricityBills(listArea, filterKey) {
+    listArea.innerHTML = getProgressLoaderHtml('Memuat Iuran Listrik...');
+    const bar = document.getElementById('progress-bar-inner');
+    const percentageText = document.getElementById('progress-percentage');
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += Math.floor(Math.random() * 10) + 5;
+        if (progress >= 95) {
+            progress = 95;
+            clearInterval(interval);
+        }
+        bar.style.width = progress + '%';
+        percentageText.textContent = progress + '%';
+    }, 150);
+    try {
+        const response = await fetch(`${API_URL}?action=read&sheet=penghuni`);
+        const result = await response.json();
+        if (!result.success) throw new Error(result.message);
+
+        const electricityData = result.data.penghuni;
+        const filteredData = electricityData.filter(data => data.kamar.startsWith(filterKey) && data.statusKamar !== 'Tersedia');
+        
+        let electricityHtml = ``;
+        if (filteredData.length > 0) {
+            filteredData.forEach(data => {
+                // PENAMBAHAN LOGIKA: Cek apakah kamar ini adalah kamar pemilik (A1)
+                if (data.kamar === 'A1') {
+                    // Jika ya, buat kartu khusus pemilik
+                    electricityHtml += `
+                        <div class="database-card owner-room">
+                            <h4><i class="fas fa-user-tie"></i> Kamar A1 - Pemilik</h4>
+                            <div class="database-detail-item"><span>Status</span><span class="database-value">Tidak Dikenakan Iuran</span></div>
+                        </div>`;
+                } else {
+                    // Jika bukan, gunakan logika yang sudah ada untuk penghuni biasa
+                    const iuranListrik = parseInt(data.iuranListrik) || 0;
+                    let totalTagihan = parseInt(data.nominal) || 0;
+                    const statusIcon = data.statusTagihan === 'Lunas' ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle';
+                    const statusClass = data.statusTagihan === 'Lunas' ? 'status-lunas' : 'status-menunggak';
+                    
+                    if (data.statusTagihan === 'Lunas') {
+                        totalTagihan = 0;
+                    }
+
+                    let jumlahBulanHtml = '';
+                    if (data.statusTagihan === 'Menunggak' && data.jumlahBulan > 0) {
+                        jumlahBulanHtml = `
+                            <div class="database-detail-item">
+                                <span>Jumlah Bulan</span>
+                                <span class="database-value" style="color: #e74c3c;">${data.jumlahBulan} bulan</span>
+                            </div>`;
+                    }
+
+                    electricityHtml += `
+                        <div class="database-card" data-kamar="${data.kamar}">
+                            <h4>Kamar ${data.kamar} - ${data.nama}</h4>
+                            <div class="database-detail-item"><span>No. WhatsApp</span><span class="database-value whatsapp-number">Tersembunyi...</span></div>
+                            <div class="database-detail-item"><span>Iuran Listrik</span><span class="database-value">Rp ${formatRupiah(iuranListrik)}/bulan</span></div>
+                            <div class="database-detail-item"><span>Status Tagihan</span><span class="database-value ${statusClass}"><i class="${statusIcon}"></i> ${data.statusTagihan || 'Tidak Ada'}</span></div>
+                            ${jumlahBulanHtml}
+                            <div class="database-detail-item"><span>Total Tagihan</span><span class="database-value ${statusClass}">Rp ${formatRupiah(totalTagihan)}</span></div>
+                        </div>`;
+                }
+            });
+        } else {
+            electricityHtml += `<p style="text-align: center; color: var(--light-text-color);">Tidak ada data tagihan listrik di blok ini.</p>`;
+        }
+        listArea.innerHTML = electricityHtml;
+    } catch (error) {
+        listArea.innerHTML = `<p style="text-align: center; color: var(--light-text-color);">Gagal memuat data. ${error.message}</p>`;
+    }
+}
+
+
+// ===============================================
+// ============== DATA SHEET ===============
+// ===============================================
+document.addEventListener('change', (e) => {
+    if (e.target.name === 'select-row' && e.target.type === 'radio') {
+        selectedRowId = e.target.value;
+        console.log("Selected row ID:", selectedRowId);
+    }
+});
+
+async function renderDataSheetContent(contentArea) {
+    // 1. Langsung tampilkan loading state di seluruh area konten
+    contentArea.innerHTML = getProgressLoaderHtml('Memuat Data Sheet....');
+    const bar = document.getElementById('progress-bar-inner');
+    const percentageText = document.getElementById('progress-percentage');
+    let progress = 0;
+    
+    const interval = setInterval(() => {
+        progress += Math.floor(Math.random() * 10) + 5;
+        if (progress >= 95) {
+            progress = 95;
+            clearInterval(interval);
+        }
+        if(bar) bar.style.width = progress + '%';
+        if(percentageText) percentageText.textContent = progress + '%';
+    }, 150);
+
+    try {
+        const response = await fetch(`${API_DATA_SHEET}?action=read`);
+        const result = await response.json();
+        
+        // 2. Setelah data dimuat, hentikan animasi dan render konten tabel
+        clearInterval(interval);
+
+        if (!result.success) {
+            throw new Error(result.message);
+        }
+        
+        // Render semua konten tabel sekaligus
+        let htmlContent = document.getElementById('datasheet-content').innerHTML;
+        contentArea.innerHTML = htmlContent;
+
+        const tableBody = contentArea.querySelector('#data-table tbody');
+        if (result.data && result.data.length > 0) {
+            tableBody.innerHTML = buildTableRows(result.data);
+        } else {
+           contentArea.innerHTML = getProgressLoaderHtml('Memuat data...');
+        }
+    } catch (error) {
+        // 3. Jika gagal, hentikan animasi dan tampilkan pesan error
+        clearInterval(interval);
+        console.error('Error saat memuat data sheet:', error);
+        contentArea.innerHTML = `<p style="text-align: center; color: #e74c3c; padding: 20px;">Gagal memuat data: ${error.message}</p>`;
+    }
+}
+
+// Ganti seluruh fungsi buildTableRows Anda dengan kode ini
+function buildTableRows(data) {
+    if (!data || data.length === 0) {
+        return `<tr><td colspan="9" style="text-align: center;">Tidak ada data yang ditemukan.</td></tr>`;
+    }
+    return data.map((item, index) => `
+        <tr data-id="${item.id}">
+            <td>
+                <label class="radio-container">
+                    <input type="radio" name="select-row" value="${item.id}">
+                    <span class="radio-custom"></span>
+                </label>
+            </td>
+            <td>${index + 1}</td>
+            <td>${item.kamar || '-'}</td>
+            <td>${item.nama || '-'}</td>
+            <td>
+                ${item.fotoKtpUrl && item.fotoKtpUrl !== '-' ? 
+                    `<a href="#" class="view-ktp-btn" data-url="${item.fotoKtpUrl}">Lihat KTP</a>` : 
+                    `<span>Data tidak ada</span>`}
+            </td>
+            <td></td>
+            <td>${item.tanggal || '-'}</td>
+            <td>${item.deskripsi || '-'}</td>
+            <td>${item.status || '-'}</td>
+        </tr>
+    `).join('');
+}
+
+
+// Fungsi baru untuk menampilkan modal KTP
+function showKtpModal(imageUrl) {
+    const modal = document.getElementById('ktp-modal-backdrop');
+    const imagePreview = document.getElementById('ktp-image-preview');
+    const downloadBtn = document.getElementById('ktp-download-btn');
+    
+    imagePreview.src = imageUrl;
+    downloadBtn.href = imageUrl;
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('show');
+}
+
+// Tambahkan event listener untuk tombol "Lihat"
+document.body.addEventListener('click', (e) => {
+    const target = e.target;
+    if (target.classList.contains('view-ktp-btn')) {
+        e.preventDefault();
+        const imageUrl = target.dataset.url;
+        showKtpModal(imageUrl);
+    }
+    // Tambahkan logika untuk menutup modal
+    else if (target.closest('#ktp-modal .modal-close-btn')) {
+        const modal = document.getElementById('ktp-modal-backdrop');
+        modal.classList.remove('show');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    }
+});
+
+// ===============================================
+// === FUNGSI TAMBAHAN UNTUK CRUD DATA SHEET ===
+// ===============================================
+
+async function handleDataSheetAdd(target) {
+    const kamar = prompt("Kamar:");
+    if (!kamar) return;
+    const tanggal = prompt("Tanggal:");
+    if (!tanggal) return;
+    const deskripsi = prompt("Deskripsi:");
+    if (!deskripsi) return;
+    const status = prompt("Status:");
+    if (!status) return;
+
+    await sendDataSheetRequest('create', { kamar, tanggal, deskripsi, status });
+}
+
+
+// GANTI FUNGSI LAMA DENGAN VERSI BARU INI
+async function handleDataSheetEdit() {
+    if (!selectedRowId) {
+        showCustomAlert("Pilih baris data yang ingin Anda edit terlebih dahulu.");
+        return;
+    }
+
+    // Ambil data dari baris tabel yang dipilih
+    const row = document.querySelector(`tr[data-id="${selectedRowId}"]`);
+    if (!row) {
+        showCustomAlert("Baris yang dipilih tidak ditemukan. Coba refresh halaman.");
+        return;
+    }
+
+    const data = {
+        id: selectedRowId,
+        kamar: row.cells[2].textContent,
+        nama: row.cells[3].textContent,
+        tanggal: row.cells[6].textContent,
+        deskripsi: row.cells[7].textContent,
+        status: row.cells[8].textContent
+    };
+    
+    // Isi form di dalam modal dengan data
+    document.getElementById('datasheet-edit-id').value = data.id;
+    document.getElementById('datasheet-edit-kamar').value = data.kamar;
+    document.getElementById('datasheet-edit-nama').value = data.nama;
+    document.getElementById('datasheet-edit-tanggal').value = formatDateToYyyyMmDd(data.tanggal);
+    document.getElementById('datasheet-edit-deskripsi').value = data.deskripsi;
+    document.getElementById('datasheet-edit-status').value = data.status;
+
+    // Tampilkan modal yang "keren"
+    const modal = document.getElementById('datasheet-edit-modal-backdrop');
+    modal.classList.remove('hidden');
+    modal.classList.add('show');
+    document.body.classList.add('modal-open');
+}
+
+// TAMBAHKAN FUNGSI BARU INI
+async function sendDataSheetRequest(action, data) {
+    const formData = new FormData();
+    formData.append('action', action);
+    for (const key in data) {
+        formData.append(key, data[key]);
+    }
+
+    try {
+        const response = await fetch(API_DATA_SHEET, {
+            method: 'POST',
+            body: formData
+        });
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.message || 'Terjadi kesalahan di server.');
+        }
+        showCustomAlert(result.message || 'Operasi berhasil!');
+        renderDataSheetContent(document.getElementById('content-area')); // Muat ulang data
+    } catch (error) {
+        showCustomAlert(`Gagal: ${error.message}`);
+    }
+}
+
+// ===============================================
+// ============== LIVE CHAT FORM WHATSAPP ===============
+// ===============================================
+function renderLiveChatForm(contentArea) {
+    // 1. Membuat HTML untuk form
+    const formHtml = `
+        <div class="database-form-container">
+            <h3 style="color: var(--primary-color); margin-bottom: 20px;">Live Chat dan Kirim Pesan</h3>
+            <p>Silakan isi form di bawah ini untuk menanyakan ketersediaan kamar. Pesan akan dikirimkan melalui WhatsApp.</p>
+            <form id="livechat-form" class="database-form">
+                <label for="chat-nama">Nama:</label>
+                <input type="text" id="chat-nama" name="nama" placeholder="Masukkan nama lengkap Anda" required>
+                
+                <label for="chat-whatsapp">Nomor WhatsApp:</label>
+                <input type="tel" id="chat-whatsapp" name="whatsapp" placeholder="Contoh: 081234567890" required>
+                
+                <label for="chat-alamat">Alamat Asal:</label>
+                <input type="text" id="chat-alamat" name="alamat" placeholder="Contoh: Jakarta" required>
+                
+                <label for="chat-status">Status:</label>
+                <select id="chat-status" name="status" required>
+                    <option value="" disabled selected>Pilih status Anda</option>
+                    <option value="Mahasiswa">Mahasiswa</option>
+                    <option value="Bekerja">Bekerja</option>
+                    <option value="Umum">Umum</option>
+                </select>
+                
+                <div class="form-actions" style="margin-top: 25px;">
+                    <button type="submit" class="form-btn" style="background-color: #25D366; width: 100%;">
+                        <i class="fab fa-whatsapp"></i> Kirim via WhatsApp
+                    </button>
+                </div>
+            </form>
+        </div>
+    `;
+    
+    // 2. Menampilkan form ke halaman
+    contentArea.innerHTML = formHtml;
+
+    // 3. Menambahkan event listener ke form yang baru dibuat
+    const liveChatForm = document.getElementById('livechat-form');
+    if (liveChatForm) {
+        liveChatForm.addEventListener('submit', (e) => {
+            e.preventDefault(); // Mencegah form mengirim data secara normal
+
+            // Ambil data dari setiap input
+            const nama = document.getElementById('chat-nama').value;
+            const whatsapp = document.getElementById('chat-whatsapp').value;
+            const alamat = document.getElementById('chat-alamat').value;
+            const status = document.getElementById('chat-status').value;
+
+            // Nomor WhatsApp tujuan (pengelola kost)
+            const targetWhatsappNumber = '628156818286'; // Ganti jika perlu
+
+            // Buat template pesan sesuai permintaan
+            const message = `
+Yth. Bapak/Ibu kost,
+saya di bawah ini:
+- Nama: ${nama}
+- Nomor WhatsApp: ${whatsapp}
+- Alamat Asal: ${alamat}
+- Status: ${status}
+
+Terkait ini saya mau menanyakan perihal sewa kamar, apakah ada yang tersedia? Terima kasih.
+            `;
+
+            // Buat URL WhatsApp dan buka di tab baru
+            const whatsappUrl = `https://wa.me/${targetWhatsappNumber}?text=${encodeURIComponent(message.trim())}`;
+            window.open(whatsappUrl, '_blank');
+        });
+    }
+}
+
+
+// ===============================================
+// ============== PASSWORD WIFI DATA ===============
+// ===============================================
+const wifiData = {
+    kamarA: [
+        { title: 'Kamar A1', username: 'user A1', password: '426958' }, 
+        { title: 'Kamar A2', username: 'user A2', password: '984263' }, 
+        { title: 'Kamar A3', username: 'user A3', password: '569926' }, 
+        { title: 'Kamar A4', username: 'user A4', password: '685862' }, 
+        { title: 'Kamar A5', username: 'user A5', password: '486832' }, 
+        { title: 'Kamar A6', username: 'user A6', password: '464333' }, 
+        { title: 'Kamar A7', username: 'user A7', password: '425859' }, 
+        { title: 'Kamar A8', username: 'user A8', password: '953494' }, 
+        { title: 'Kamar A9', username: 'user A9', password: '538737' }
+    ],
+    kamarB: [
+        { title: 'Kamar B1', username: 'user B1', password: '948244' }, 
+        { title: 'Kamar B2', username: 'user B2', password: '554458' }, 
+        { title: 'Kamar B3', username: 'user B3', password: '897728' }, 
+        { title: 'Kamar B4', username: 'user B4', password: '223873' }, 
+        { title: 'Kamar B5', username: 'user B5', password: '884626' }, 
+        { title: 'Kamar B6', username: 'user B6', password: '843624' }
+    ],
+    kamarC: [
+        { title: 'Kamar C1', username: 'user C1', password: '777629' }, 
+        { title: 'Kamar C2', username: 'user C2', password: '679635' }, 
+        { title: 'Kamar C3', username: 'user C3', password: '525227' }, 
+        { title: 'Kamar C4', username: 'user C4', password: '267873' }, 
+        { title: 'Kamar C5', username: 'user C5', password: '996328' }, 
+        { title: 'Kamar C6', username: 'user C6', password: '474875' }
+    ],
+    kamarD: [
+        { title: 'Kamar D1', username: 'user D1', password: '282647' }, 
+        { title: 'Kamar D2', username: 'user D2', password: '967368' }, 
+        { title: 'Kamar D3', username: 'user D3', password: '356242' }, 
+        { title: 'Kamar D4', username: 'user D4', password: '639879' }, 
+        { title: 'Kamar D5', username: 'user D5', password: '958544' }, 
+        { title: 'Kamar D6', username: 'user D6', password: '286895' }, 
+        { title: 'Kamar D7', username: 'user D7', password: '239684' }, 
+        { title: 'Kamar D8', username: 'user D8', password: '764844' }, 
+        { title: 'Kamar D9', username: 'user D9', password: '526399' }, 
+        { title: 'Kamar D10', username: 'user D10', password: '334868' }
+    ],
+    userAccess: [
+        { title: 'Access Space Kamar A', username: 'user-acs A', password: '627228' }, 
+        { title: 'Access Space Kamar B', username: 'user-acs B', password: '282926' }, 
+        { title: 'Access Space Kamar C', username: 'user-acs C', password: '182828' }, 
+        { title: 'Access Space Kamar D', username: 'user-acs D', password: '728251' }
+    ],
+    userTamu: [
+        { title: 'User Tamu', username: 'user-tamu', password: '08/2025' }, 
+        { title: 'Voucher Family', username: null, password: 'FAMILY_V2025' }
+    ],
+    all: []
+};
+wifiData.all = [
+    ...wifiData.kamarA, 
+    ...wifiData.kamarB, 
+    ...wifiData.kamarC, 
+    ...wifiData.kamarD, 
+    ...wifiData.userAccess, 
+    ...wifiData.userTamu
+];
+
+function renderWifiContent(filterKey) {
+    const dataToRender = wifiData[filterKey];
+    let wifiHtml = '';
+    if (dataToRender) {
+        wifiHtml += `<div class="wifi-grid">`;
+        dataToRender.forEach((wifi, index) => {
+            const uniqueId = `wifi-pass-${filterKey}-${index}`;
+            const fullText = `Nama Wifi:\n*KOST PUTRA BU YANI*\n\nUsername:\n> ${wifi.username || 'Tidak ada'}\nPassword:\n> ${wifi.password}`;
+            wifiHtml += `<div class="wifi-card-item"><h2>${wifi.title}</h2><pre class="text-box" id="${uniqueId}">${fullText}</pre><div class="button-group"><button class="copy-btn" data-target="${uniqueId}"><i class="fas fa-copy"></i> Salin</button><button class="wifi-share-wa-btn" data-target="${uniqueId}"><i class="fab fa-whatsapp"></i> Share</button></div></div>`;
+        });
+        wifiHtml += `</div>`;
+    }
+    return wifiHtml;
+}
+function handleWifiFilter(target) {
+    const filterKey = target.closest('.filter-modal-btn').dataset.filter;
+    document.getElementById('wifi-content-grid').innerHTML = renderWifiContent(filterKey);
+    document.getElementById('wifi-content-grid').classList.remove('hidden');
+    document.getElementById('wifi-filter-modal-backdrop').classList.remove('show');
+}
+
+function handleCloseModal(target) {
+    const modal = target.closest('#password-modal-backdrop, #wifi-filter-modal-backdrop, #custom-alert-backdrop, #setup-modal-backdrop, #receipt-preview-modal-backdrop, #booking-modal-backdrop');
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+        document.body.classList.remove('modal-open');
+    }
+}
+
+
+// ===============================================
+// ============== SERVER & CCTV ===============
+// ===============================================
+function renderCctvContent(contentArea) {
+    const mainAccount = { title: 'Informasi Perangkat Login', username: 'mbahteh@gmail.com', password: 'parinten123' };
+    contentArea.innerHTML = `
+        <div class="cctv-main-card">
+            <i class="fas fa-video cctv-icon-anim"></i>
+            <h4 class="cctv-main-title">${mainAccount.title}</h4>
+            <div class="cctv-info-section">
+                <div class="cctv-detail">
+                    <span class="cctv-label">Username</span>
+                    <div class="cctv-value-container">
+                        <span id="cctv-username-1" class="cctv-value">${mainAccount.username}</span>
+                        <button class="copy-btn" data-target="cctv-username-1"><i class="fas fa-copy"></i></button>
+                    </div>
+                </div>
+                <div class="cctv-detail">
+                    <span class="cctv-label">Password</span>
+                    <div class="cctv-value-container">
+                        <span id="cctv-password-1" class="cctv-value">${mainAccount.password}</span>
+                        <button class="copy-btn" data-target="cctv-password-1"><i class="fas fa-copy"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="cctv-secondary-content-container">
+            ${document.getElementById('cctv-secondary-content').innerHTML}
+        </div>
+        <p style="font-size: 0.9em; color: var(--light-text-color); margin-top: 20px; text-align: center;">
+            Harap gunakan informasi ini dengan bijak dan bertanggung jawab.
+        </p>`;
+}
+
+function renderServerContent(contentArea) {
+    const serverData = [
+        { title: 'ROUTER INDIBIZ', accounts: [{ type: 'Admin', username: 'admin', password: 'Telkomdso123', link: 'http://192.168.1.1/' }, { type: 'User', username: 'user', password: 'AdmRT Indibiz#2025*', link: 'http://192.168.1.1/' }] }, 
+        { title: 'ROUTER ZTE 670', accounts: [{ type: 'Admin', username: 'admin', password: 'Telkomdso123', link: 'http://192.168.1.2/' }, { type: 'User', username: 'user', password: 'AdmRT ZTEIndibiz2025#', link: 'http://192.168.1.2/' }] }, 
+        { title: 'SETTING MIKROTIK (Menggunakan WinBox)', accounts: [{ type: 'Admin', username: 'admin', password: '123', link: 'Ip: Server Akses' }] }, 
+        { title: 'SETTING MIKHMON', accounts: [{ type: 'Mikhmon', username: 'mikhmon', password: '1234', link: 'Ip:Server Mikhmon' }] }, 
+        { title: 'CATATAN AKSES VIA SERVER VPN', accounts: [{ type: 'VPN MIKROTIK', username: 'admin', password: '123', link: 'https://vpn-oosnetwork.com:3399/258989036384' }, { type: 'User', username: 'admin', password: null, link: '/' }] }, 
+        { title: 'Member Area', accounts: [{ type: 'Member', username: '258989036384', password: '1234', link: 'https://client-oosnetwork.my.id' }] }
+    ];
+
+    let serverHtml = `<h3 style="color: var(--primary-color); margin-bottom: 20px;">Informasi Akses Server</h3>`;
+    serverData.forEach((section) => {
+        serverHtml += `<div class="server-card"><h4>${section.title}</h4><div class="server-details-grid">`;
+        section.accounts.forEach((account, index) => {
+            const uniqueId = `server-info-${section.title.replace(/\s+/g, '-')}-${index}`;
+            if (account.username) serverHtml += `<div class="detail-item"><span class="detail-label">${account.type} Username</span><div class="detail-value-container"><span id="${uniqueId}-user" class="detail-value">${account.username}</span><button class="copy-btn" data-target="${uniqueId}-user"><i class="fas fa-copy"></i></button></div></div>`;
+            if (account.password) serverHtml += `<div class="detail-item"><span class="detail-label">${account.type} Password</span><div class="detail-value-container"><span id="${uniqueId}-pass" class="detail-value">${account.password}</span><button class="copy-btn" data-target="${uniqueId}-pass"><i class="fas fa-copy"></i></button></div></div>`;
+            if (account.link) {
+                const isUrl = account.link.startsWith('http');
+                serverHtml += `<div class="detail-item full-width-link"><span class="detail-label">Alamat atau Link</span><div class="detail-value-container">${isUrl ? `<a href="${account.link}" target="_blank" class="detail-link">${account.link}</a>` : `<span id="${uniqueId}-link" class="detail-value">${account.link}</span>`}${!isUrl ? `<button class="copy-btn" data-target="${uniqueId}-link"><i class="fas fa-copy"></i></button>` : ''}</div></div>`;
+            }
+        });
+        serverHtml += `</div></div>`;
+    });
+    contentArea.innerHTML = serverHtml;
+}
+
+
+
+// ===============================================
+// ============== FILTER TAB TENTANG KOS =========
+// ===============================================
+function setupTentangKosTabs() {
+    const tabContainer = document.querySelector('#dynamic-content .tab-container');
+    if (!tabContainer) return;
+
+    // --- BAGIAN PENTING: MENGISI GALERI FOTO ---
+    const galleryGrid = tabContainer.querySelector('.gallery-grid');
+    const imageSources = document.querySelectorAll('#gallery-images-list img');
+    
+    // Cek agar galeri tidak diisi berulang kali
+    if (galleryGrid && galleryGrid.children.length === 0) {
+        imageSources.forEach(imgSource => {
+            const img = document.createElement('img');
+            img.src = imgSource.src;
+            img.alt = imgSource.alt;
+            galleryGrid.appendChild(img);
+        });
+    }
+    // --- AKHIR BAGIAN PENTING ---
+
+    const tabButtons = tabContainer.querySelectorAll('.tab-button');
+    const tabPanes = tabContainer.querySelectorAll('.tab-pane');
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            // Logika untuk mengganti tab
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+
+            tabPanes.forEach(pane => {
+                pane.classList.add('hidden');
+                pane.classList.remove('active');
+            });
+
+            const targetTabId = `tab-${button.dataset.tab}`;
+            const targetPane = tabContainer.querySelector(`#${targetTabId}`);
+            if (targetPane) {
+                targetPane.classList.remove('hidden');
+                targetPane.classList.add('active');
+            }
+        });
+    });
+
+    // ===============================================
+    // ===== LOGIKA UNTUK LIGHTBOX (POP-UP GAMBAR) ===
+    // ===============================================
+    const lightbox = document.querySelector('.lightbox');
+    const lightboxImage = document.querySelector('.lightbox-image');
+    const galleryImages = tabContainer.querySelectorAll('.gallery-grid img');
+    let currentIndex = 0;
+
+    if (!lightbox || !lightboxImage || galleryImages.length === 0) return;
+
+    const showImage = (index) => {
+        lightboxImage.src = galleryImages[index].src;
+        currentIndex = index;
+        lightbox.classList.add('active');
+    };
+
+    galleryImages.forEach((img, index) => {
+        img.addEventListener('click', () => showImage(index));
+    });
+
+    document.querySelector('.lightbox-close').addEventListener('click', () => lightbox.classList.remove('active'));
+    document.querySelector('.lightbox-prev').addEventListener('click', () => {
+        currentIndex = (currentIndex > 0) ? currentIndex - 1 : galleryImages.length - 1;
+        showImage(currentIndex);
+    });
+    document.querySelector('.lightbox-next').addEventListener('click', () => {
+        currentIndex = (currentIndex < galleryImages.length - 1) ? currentIndex + 1 : 0;
+        showImage(currentIndex);
+    });
+}
+
+    // ===============================================
+    // ===== MODAL WHATSAPP ===
+    // ===============================================
+
+function showBookingModal(roomNumber) {
+    const modal = document.getElementById('booking-modal-backdrop');
+    modal.querySelector('#booking-room-number').textContent = roomNumber;
+    modal.querySelector('#booking-form-room').value = roomNumber;
+    modal.classList.remove('hidden');
+    modal.classList.add('show');
+}
+
+
+
+
+
+// ===============================================
+// ============== MENU SETUP POPUP =================
+// ===============================================
+function handleMenuClick(menuCard) {
+    const pageId = menuCard.dataset.page;
+    if (pageId === 'setup') {
+        document.getElementById('setup-modal-backdrop').classList.add('show');
+        return;
+    }
+    if (menuCard.closest('#setup-modal')) {
+        const modal = document.getElementById('setup-modal-backdrop');
+        modal.classList.remove('show');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    }
+    
+    if (menuCard.classList.contains('password-protected')) {
+        currentPageId = pageId;
+        const modal = document.getElementById('password-modal-backdrop');
+        modal.classList.remove('hidden');
+        modal.classList.add('show');
+        modal.querySelector('#modal-submit-btn').dataset.targetPassword = '12';
+    } else {
+        displayContent(pageId);
+    }
+}
+
+
+// ===============================================
+// ============== PASSWORD & SETTING =================
+// ===============================================
+function handlePasswordModal(target) {
+    const modal = document.getElementById('password-modal-backdrop');
+    if (target.id === 'modal-cancel-btn') {
+        modal.classList.remove('show');
+    } else if (target.id === 'modal-submit-btn') {
+        const passwordInput = document.getElementById('password-input');
+        if (passwordInput.value === target.dataset.targetPassword) {
+            modal.classList.remove('show');
+            displayContent(currentPageId);
+            passwordInput.value = '';
+            document.getElementById('password-error').classList.add('hidden');
+        } else {
+            document.getElementById('password-error').classList.remove('hidden');
+        }
+    }
+}
+
+
+// ===== START: BLOK KODE PERBAIKAN KWITANSI (Salin semua di bawah ini) =====
+
+/**
+ * Mengubah angka menjadi teks terbilang Rupiah.
+ */
+function numberToText(n) {
+    if (n === null || n === undefined) return "Nol";
+    n = parseInt(String(n).replace(/\./g, ''));
+    const units = ["", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan"];
+    const teens = ["Sepuluh", "Sebelas", "Dua Belas", "Tiga Belas", "Empat Belas", "Lima Belas", "Enam Belas", "Tujuh Belas", "Delapan Belas", "Sembilan Belas"];
+    const tens = ["", "", "Dua Puluh", "Tiga Puluh", "Empat Puluh", "Lima Puluh", "Enam Puluh", "Tujuh Puluh", "Delapan Puluh", "Sembilan Puluh"];
+    const thousands = ["", "Ribu", "Juta", "Milyar", "Triliun"];
+
+    if (n === 0) return "Nol";
+    let text = "";
+    let i = 0;
+    while (n > 0) {
+        let chunk = n % 1000;
+        if (chunk > 0) {
+            let chunkText = "";
+            let hundreds = Math.floor(chunk / 100);
+            let remainder = chunk % 100;
+            if (hundreds === 1) chunkText += "Seratus ";
+            else if (hundreds > 0) chunkText += units[hundreds] + " Ratus ";
+            if (remainder >= 10 && remainder <= 19) chunkText += teens[remainder - 10] + " ";
+            else {
+                let tensPart = Math.floor(remainder / 10);
+                let unitsPart = remainder % 10;
+                if (tensPart > 0) chunkText += tens[tensPart] + " ";
+                if (unitsPart > 0) chunkText += units[unitsPart] + " ";
+            }
+            if (i === 1 && chunk === 1) text = "Seribu " + text;
+            else text = chunkText.trim() + " " + thousands[i] + " " + text;
+        }
+        n = Math.floor(n / 1000);
+        i++;
+    }
+    return text.trim().replace(/\s+/g, ' ');
+}
+
+
+/**
+ * Menyiapkan form pembayaran dengan data penghuni yang dipilih.
+ */
+function displayGeneratePembayaranForm(data) {
+    const contentArea = document.getElementById('content-area');
+    
+    // Menunggu DOM di contentArea siap sebelum memanipulasinya
+    setTimeout(() => {
+        const selectNamaLabel = contentArea.querySelector('label[for="nama-penghuni-bayar"]');
+        const selectNama = contentArea.querySelector('#nama-penghuni-bayar');
+        
+        if (selectNamaLabel && selectNama) {
+            const staticNameDisplay = document.createElement('div');
+            staticNameDisplay.innerHTML = `<strong style="font-size: 1.1em;">${data.nama}</strong> (Kamar ${data.kamar})`;
+            staticNameDisplay.style.padding = '12px';
+            staticNameDisplay.style.backgroundColor = '#f0f4f8';
+            staticNameDisplay.style.border = '1px solid #e0e0e0';
+            staticNameDisplay.style.borderRadius = '8px';
+            selectNama.replaceWith(staticNameDisplay);
+        }
+        
+        contentArea.querySelector('#ruang-kamar-bayar').value = data.kamar || '';
+        contentArea.querySelector('#nominal-bayar').value = data.nominal || '';
+        contentArea.querySelector('#jatuh-tempo-bayar').value = data.jatuhTempo || '';
+        contentArea.querySelector('#whatsapp-bayar').value = data.whatsapp || '';
+
+        let hiddenInput = contentArea.querySelector('#nama-penghuni-bayar-hidden');
+        if (!hiddenInput) {
+            hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.id = 'nama-penghuni-bayar-hidden';
+            contentArea.querySelector('form').prepend(hiddenInput);
+        }
+        hiddenInput.value = data.nama || '';
+    }, 100); // Jeda 100ms untuk memastikan halaman form sudah termuat
+}
+
+// Temukan fungsi handleGenerateKuitansi
+async function handleGenerateKuitansi(e) {
+    const form = e.target.closest('form');
+    if (!form) return;
+
+    const namaPenghuni = form.querySelector('#nama-penghuni-bayar-hidden')?.value;
+    const ruangKamar = form.querySelector('#ruang-kamar-bayar').value;
+    const nominal = form.querySelector('#nominal-bayar').value;
+    const startMonth = form.querySelector('#start-month').value;
+    const endMonth = form.querySelector('#end-month').value;
+
+    if (!namaPenghuni || !ruangKamar || !nominal || !startMonth) {
+        showCustomAlert('Nama penghuni, kamar, nominal, dan bulan awal wajib diisi untuk membuat kuitansi.');
+        return;
+    }
+
+    const button = e.target.closest('button');
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Membuat...';
+
+    const nominalInWords = numberToText(nominal);
+    const receiptDate = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    const periodeTeks = endMonth ? `${startMonth} - ${endMonth}` : startMonth;
+    
+    // Buat elemen kwitansi sementara di luar layar untuk di-render
+    const receiptContainer = document.createElement('div');
+    receiptContainer.style.position = 'absolute';
+    receiptContainer.style.left = '-9999px';
+    const now = new Date();
+    const digitalPrintDate = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    const digitalPrintTime = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+    receiptContainer.innerHTML = `
+        <div id="receipt-card-render" style="width: 380px; font-family: 'Segoe UI', Arial, sans-serif; padding: 15px 25px 25px; box-sizing: border-box; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+    
+        <div style="text-align: center; border-bottom: 2px solid #e0e0e0; padding-bottom: 15px; margin-bottom: 15px;">
+            <img src="images/logo-kwitansi.JPG" alt="Logo Kost Bu Yani" style="width: 120px; height: auto; margin-bottom: 5px;">
+            <h2 style="margin: 0; font-size: 1.8em; color: #1e3a8a;">KOST PUTRA BU YANI</h2>
+            <p style="margin: 5px 0 0; font-size: 0.9em; color: #6b7280;">Kos Putra Bu Yani, Jalan Ngemplak No. 33, RT.4/RW.8, Sendangadi, Kec. Mlati, Kab. Sleman, Yogyakarta</p>
+        </div>
+
+        <div style="text-align: center; margin-bottom: 15px;">
+            <h3 style="margin: 0; font-size: 1.5em; color: #1f2937;">KUITANSI PEMBAYARAN</h3>
+        </div>
+
+        <div style="text-align: center; border: 1px dashed #d1d5db; padding: 10px 15px; border-radius: 8px; margin-bottom: 15px;">
+            <p style="margin: 0 0 2px 0; font-size: 1.1em; font-weight: 600; color: #1e40af;">Jumlah Pembayaran</p>
+            <p style="margin: 0; font-size: 1.6em; font-weight: 700; color: #1e40af;">Rp ${formatRupiah(nominal)}</p>
+        </div>
+
+        <div style="text-align: center; padding: 0 0 15px 0; font-style: italic; margin-bottom: 15px; border-bottom: 1px dashed #d1d5db;">
+            <p style="margin: 0; font-weight: 500; font-size: 0.9em;">"Terbilang: ${nominalInWords} Rupiah"</p>
+        </div>
+
+        <div style="font-size: 1em; color: #374151;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #d1d5db;">
+                <span style="font-weight: 600; color: #1f2937;">Telah Diterima Dari</span>
+                <span style="font-weight: 500; text-align: right;">${namaPenghuni}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #d1d5db;">
+                <span style="font-weight: 600; color: #1f2937;">Untuk Pembayaran</span>
+                <span style="font-weight: 500; text-align: right;">Sewa Kost Kamar ${ruangKamar}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #d1d5db;">
+                <span style="font-weight: 600; color: #1f2937;">Periode</span>
+                <span style="font-weight: 500; text-align: right;">${periodeTeks}</span>
+            </div>
+            <div style="padding: 15px 0; text-align: center; font-style: italic; border-bottom: 1px dashed #d1d5db;">
+                <p style="margin: 0; font-weight: 500; font-size: 0.9em;">Terima kasih atas pembayaran sewa kost yang telah Anda lakukan. Semoga Anda selalu betah dan nyaman tinggal di sini.</p>
+            </div>
+        </div>
+
+        <div style="text-align: center; padding: 10px 0; font-size: 0.75em; color: #9ca3af; font-style: normal;">
+            <p style="margin: 0;">Kuitansi ini dicetak secara digital pada</p>
+            <p style="margin: 2px 0 0; font-weight: 600; color: #6b7280;">${digitalPrintDate}, ${digitalPrintTime} WIB</p>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #d1d5db; padding-top: 20px;">
+            <div style="flex-basis: 50%; text-align: left; padding-right: 15px;">
+                <p style="margin: 0; font-size: 0.8em; color: #6b7280;">
+                    <i class="fas fa-map-marker-alt"></i> Kos Putra Bu Yani, Jalan Ngemplak No. 33, RT.4/RW.8, Sendangadi, Kec. Mlati, Kab. Sleman, Yogyakarta
+                </p>
+                <p style="margin: 5px 0 0; font-size: 0.8em; color: #6b7280;">
+                    <i class="fab fa-whatsapp"></i> WhatsApp: 0812-3456-7890
+                </p>
+            </div>
+            <div style="flex-basis: 50%; text-align: right;">
+                <span style="display: block; font-size: 0.9em; color: #6b7280;">Yogyakarta, ${receiptDate}</span>
+                <img src="images/tanda-tangan.PNG" alt="Tanda Tangan" style="width: 30px; height: auto; margin: 10px 0 5px auto; display: block;">
+                <span style="display: block; font-size: 0.9em; font-weight: 600; color: #1f2937;">(Susantoro)</span>
+            </div>
+        </div>
+    </div>
+    `;
+    document.body.appendChild(receiptContainer);
+
+    try {
+        const canvas = await html2canvas(receiptContainer.querySelector('#receipt-card-render'), { scale: 2 });
+        generatedReceiptData = canvas.toDataURL('images/logo-kos.jpg');
+        document.getElementById('initial-payment-view').classList.add('hidden');
+        document.getElementById('generated-actions-container').classList.remove('hidden');
+    } catch (error) {
+        showCustomAlert('Gagal membuat gambar kwitansi: ' + error.message);
+    } finally {
+        document.body.removeChild(receiptContainer);
+        button.disabled = false;
+        button.innerHTML = 'Buat Kuitansi';
+    }
+}
+
+function handlePreviewKuitansi() {
+    if (!generatedReceiptData) {
+        showCustomAlert('Tidak ada kuitansi untuk ditampilkan. Buat kuitansi terlebih dahulu.');
+        return;
+    }
+    document.getElementById('receipt-preview-image').src = generatedReceiptData;
+    document.getElementById('receipt-preview-modal-backdrop').classList.remove('hidden');
+    document.getElementById('receipt-preview-modal-backdrop').classList.add('show');
+}
+
+function handleShareKuitansi() {
+    if (!generatedReceiptData) {
+        showCustomAlert('Tidak ada kuitansi untuk dibagikan. Buat kuitansi terlebih dahulu.');
+        return;
+    }
+
+    const namaPenghuni = document.getElementById('nama-penghuni-bayar-hidden').value;
+    const shareText = `Halo ${namaPenghuni}, ini adalah kuitansi pembayaran sewa kost Anda.`;
+
+    // Buat file dari data URL (hanya berfungsi jika pengguna mengklik dari perangkat seluler)
+    const link = document.createElement('a');
+    link.href = generatedReceiptData;
+    link.download = `kwitansi_${namaPenghuni.replace(/\s+/g, '_')}.png`;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Langsung buka WhatsApp dengan pesan saja (tanpa gambar)
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+    window.open(whatsappUrl, '_blank');
+}

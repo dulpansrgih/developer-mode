@@ -1,0 +1,1266 @@
+/* ===========================================
+/* Desain Kuitansi V25 (Minimalis Modern)
+/* =========================================== */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Playfair+Display:wght@700&display=swap');
+
+#receipt-card {
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    font-family: 'Roboto', sans-serif;
+    color: #343a40;
+    max-width: 380px;
+    margin: 0 auto;
+    border: 1px solid #e9ecef;
+    position: relative;
+}
+
+#receipt-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background-color: #0d47a1;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+}
+
+.receipt-header-refined {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 2px dashed #dee2e6;
+}
+
+.company-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6em;
+    font-weight: 700;
+    color: #0d47a1;
+    margin: 0;
+}
+
+.company-subtitle {
+    font-size: 0.8em;
+    color: #757575;
+    margin-top: 5px;
+}
+
+.receipt-title {
+    font-size: 1.4em;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-top: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    position: relative;
+    padding-bottom: 8px;
+    text-align: left;
+    align-self: stretch;
+}
+
+.receipt-body-content {
+    text-align: left;
+    margin-bottom: 25px;
+}
+
+.nominal-box {
+    background-color: #f0f4f8;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid #e0e0e0;
+    text-align: center;
+}
+
+.nominal-label {
+    font-size: 0.8em;
+    font-weight: 500;
+    color: #6c757d;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+.nominal-value {
+    font-size: 2em;
+    font-weight: 700;
+    color: #0d47a1;
+    margin: 5px 0 0 0;
+}
+
+.receipt-details-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.details-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed #e0e0e0;
+}
+
+.details-label {
+    font-size: 0.8em;
+    text-transform: uppercase;
+    color: #95a5a6;
+}
+
+.details-value {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: #343a40;
+    text-align: right;
+}
+
+.nominal-text {
+    font-size: 0.8em;
+    font-weight: 500;
+    color: #6c757d;
+    margin-top: 15px;
+    font-style: italic;
+    text-align: center;
+}
+
+.receipt-footer-two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.signature-col,
+.note-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.signature-label {
+    font-size: 0.8em;
+    font-weight: 500;
+    color: #757575;
+    margin: 0 0 5px 0;
+}
+
+.signature-image {
+    max-width: 90px;
+    height: auto;
+    margin-bottom: 5px;
+}
+
+.signature-name {
+    font-size: 0.85em;
+    font-weight: 700;
+    color: #0d47a1;
+    margin: 0;
+}
+
+.thank-you-note {
+    font-size: 0.75em;
+    font-style: italic;
+    color: #95a5a6;
+    margin-top: 0;
+}
+
+.digital-note {
+    font-size: 0.7em;
+    font-style: italic;
+    color: #95a5a6;
+    text-align: center;
+    margin-top: 5px;
+}
+
+/* --- Gaya baru untuk halaman Database --- */
+.whatsapp-number {
+    color: var(--accent-color);
+    font-weight: 600;
+}
+
+.database-card {
+    background-color: var(--card-background);
+    border-radius: var(--border-radius-base);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.database-card h4 {
+    margin-top: 0;
+    font-size: 1.2em;
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--accent-color);
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.database-detail-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9em;
+    padding: 8px 0;
+}
+
+.database-label {
+    font-weight: 500;
+    color: var(--light-text-color);
+}
+
+.database-value {
+    font-weight: 700;
+}
+
+.status-lunas {
+    color: #28a745;
+}
+
+.status-menunggak {
+    color: #e74c3c;
+}
+
+/* Menambahkan gaya baru untuk status kamar */
+.status-tersedia {
+    color: #28a745;
+}
+
+.status-tidak-tersedia {
+    color: #e74c3c;
+}
+
+/* --- Gaya untuk halaman Database dengan CRUD --- */
+.database-controls {
+    text-align: right;
+    margin-bottom: 20px;
+}
+
+.database-form-container {
+    background-color: var(--card-background);
+    padding: 30px;
+    border-radius: var(--border-radius-base);
+    box-shadow: var(--shadow-base);
+    margin-bottom: 25px;
+}
+
+.database-form label {
+    display: block;
+    font-size: 0.9em;
+    font-weight: 600;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    color: var(--primary-color);
+}
+
+.database-form input[type="text"],
+.database-form input[type="date"],
+.database-form input[type="tel"],
+#content-area form input[type="number"],
+
+.database-form select {
+    width: 100%;
+    padding: 12px;
+    box-sizing: border-box;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.95em;
+    background-color: #f8f8f8;
+}
+
+.database-form input[type="text"]:focus,
+.database-form input[type="date"]:focus,
+.database-form input[type="tel"]:focus,
+.database-form select:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(66, 165, 245, 0.2);
+}
+
+.database-form .form-actions {
+    margin-top: 25px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.database-card .card-actions {
+    margin-top: 15px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    border-top: 1px dashed #e0e0e0;
+    padding-top: 15px;
+}
+
+.card-actions .edit-btn {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.card-actions .form-btn {
+    padding: 10px 16px;
+    font-size: 0.95em;
+    margin-top: 0;
+}
+
+.card-actions .delete-btn {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.card-actions .edit-btn:hover {
+    background-color: #64b5f6;
+}
+
+.card-actions .delete-btn:hover {
+    background-color: #c0392b;
+}
+
+/* --- Gaya baru untuk status ketersediaan di halaman Daftar Kamar --- */
+.rooms-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 15px;
+    margin-top: 25px;
+}
+
+.room-card {
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 120px;
+    border: 1px solid transparent;
+}
+
+.room-card.available-room {
+    cursor: pointer;
+    background-color: #e8f5e9;
+    border-color: #4caf50;
+}
+
+.room-card.available-room:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(76, 175, 80, 0.2);
+}
+
+.room-card.occupied-room {
+    background-color: #ffebee;
+    cursor: not-allowed;
+    opacity: 0.8;
+    border-color: #f44336;
+}
+
+.room-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.room-card .room-icon {
+    font-size: 1.8em;
+    margin-bottom: 0;
+    margin-right: 12px;
+}
+
+.room-card.available-room .room-icon,
+.room-card.available-room .room-number,
+.room-card.available-room .room-status {
+    color: #2e7d32;
+}
+
+.room-card.occupied-room .room-icon,
+.room-card.occupied-room .room-number,
+.room-card.occupied-room .room-status {
+    color: #c62828;
+}
+
+.room-number {
+    font-size: 1.2em;
+    font-weight: 700;
+    margin: 0;
+}
+
+.room-body {
+    flex-grow: 1;
+}
+
+.room-status {
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    font-size: 0.9em;
+    margin-top: 0;
+}
+
+.room-status i { 
+    margin-right: 6px; 
+    font-size: 1em;
+}
+
+.book-now-btn {
+    width: 100%;
+    padding: 10px 12px;
+    margin-top: 15px;
+    background-color: #2e7d32;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.book-now-btn:hover {
+    background-color: #1b5e20;
+    transform: translateY(-2px);
+}
+
+/* =========================================== */
+/* STYLE BARU: MODAL BOOKING                   */
+/* =========================================== */
+
+#booking-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+#booking-modal-backdrop.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+#booking-modal {
+    background-color: var(--card-background);
+    padding: 30px;
+    border-radius: var(--border-radius-base);
+    box-shadow: var(--shadow-base);
+    width: 90%;
+    max-width: 400px;
+    transform: scale(0.95);
+    transition: transform 0.3s ease-in-out;
+    text-align: left;
+}
+
+#booking-modal-backdrop.show #booking-modal {
+    transform: scale(1);
+}
+
+#booking-modal .modal-title {
+    text-align: center;
+    font-family: 'Playfair Display', serif;
+    color: var(--primary-color);
+}
+
+#booking-modal .modal-subtitle {
+    text-align: center;
+    margin-top: 5px;
+    color: var(--light-text-color);
+}
+
+#booking-form {
+    width: 100%;
+    margin-top: 20px;
+}
+
+#booking-form label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 5px;
+    font-size: 0.9em;
+    color: var(--primary-color);
+}
+
+#booking-form input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 15px;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+#booking-form input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(66, 165, 245, 0.2);
+}
+
+#booking-modal .modal-actions {
+    margin-top: 10px;
+}
+
+/* =========================================== */
+/* STYLE BARU: KAMAR KHUSUS PEMILIK            */
+/* =========================================== */
+
+.room-card.owner-room {
+    background: linear-gradient(135deg, #495057, #343a40);
+    color: #f8f9fa;
+    cursor: not-allowed;
+    border-color: #495057;
+    text-align: center;
+    justify-content: center;
+}
+
+.room-card.owner-room .room-icon,
+.room-card.owner-room .room-number,
+.room-card.owner-room .room-status {
+    color: #f8f9fa;
+}
+
+.room-card.owner-room .room-header {
+    justify-content: center;
+}
+
+/* =========================================== */
+/* STYLE BARU: KARTU DATABASE PEMILIK          */
+/* =========================================== */
+
+.database-card.owner-room {
+    background: linear-gradient(135deg, #495057, #343a40);
+    color: #f8f9fa;
+    border-left: 5px solid #343a40;
+}
+
+.database-card.owner-room h4 {
+    color: #f8f9fa;
+    border-bottom: 1px dashed #6c757d;
+}
+
+.database-card.owner-room .database-label,
+.database-card.owner-room .database-value {
+    color: #f8f9fa;
+}
+
+/* === GAYA BARU UNTUK WARNA KARTU DATABASE === */
+
+/* Warna Abu-abu untuk Kamar Pemilik (A1) */
+.database-card.owner-room {
+    background-color: #f8f9fa; /* Abu-abu sangat terang */
+    border-left: 5px solid #6c757d; /* Aksen abu-abu gelap di kiri */
+}
+
+/* Warna Berbeda untuk Kamar Kosong */
+.database-card.available-room {
+    background-color: #e9f5e9; /* Hijau sangat muda */
+    border-left: 5px solid #28a745; /* Aksen hijau di kiri */
+}
+
+/* === GAYA BARU UNTUK TOMBOL AKSI DATABASE === */
+
+.card-actions .generate-btn {
+    background-color: #28a745;
+    color: white;
+}
+.card-actions .generate-btn:hover {
+    background-color: #218838;
+}
+
+.card-actions .reminder-btn {
+    background-color: #ffc107;
+    color: #212529;
+}
+.card-actions .reminder-btn:hover {
+    background-color: #e0a800;
+}
+
+.card-actions .edit-btn {
+    background-color: var(--accent-color);
+}
+.card-actions .edit-btn:hover {
+    background-color: #64b5f6;
+}
+
+#receipt-preview-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+}
+
+#receipt-preview-modal-backdrop.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+#receipt-preview-modal {
+    background-color: var(--card-background);
+    border-radius: var(--border-radius-base);
+    box-shadow: var(--shadow-base);
+    width: 90%;
+    max-width: 420px; /* Mengurangi ukuran tampilan pratinjau */
+    transform: scale(0.95);
+    transition: transform 0.3s ease-in-out;
+}
+
+#receipt-preview-modal .modal-content {
+    padding-top: 0.1rem; /* Padding atas dibuat sangat kecil */
+    padding-bottom: 1rem; /* Jaga agar ada ruang di bawah */
+    align-items: flex-start; /* Paksa konten untuk mulai dari paling atas */
+}
+
+/* =========================================== */
+/* STYLE BARU: TAB STATUS PENGHUNI             */
+/* =========================================== */
+.konfirmasi-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 25px;
+    justify-content: center;
+}
+
+.konfirmasi-btn {
+    flex: 1;
+    text-align: center;
+    padding: 12px 20px;
+    font-size: 1em;
+    font-weight: 600;
+    color: white;
+    background-color: #dee2e6;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.konfirmasi-btn.tersedia {
+    background-color: #28a745;
+}
+
+.konfirmasi-btn.tidak-tersedia {
+    background-color: #0d47a1;
+}
+
+.konfirmasi-btn.active-status {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.konfirmasi-btn:hover {
+    filter: brightness(1.1);
+}
+
+.konfirmasi-btn.active-status:hover {
+    filter: none;
+}
+
+/* =========================================== */
+/* STYLE BARU: Tombol Aksi Konfirmasi          */
+/* =========================================== */
+
+.form-btn {
+    background-color: var(--accent-color);
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 20px;
+    font-size: 1em;
+    font-weight: 600;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.form-btn:hover {
+    background-color: #868e96;
+    transform: translateY(-2px);
+}
+
+.form-btn.destructive-btn {
+    background-color: #e74c3c;
+    color: white;
+    box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3);
+}
+
+.form-btn.destructive-btn:hover {
+    background-color: #c0392b;
+    transform: translateY(-2px);
+}
+
+.form-btn.safe-btn,
+.form-btn.cancel {
+    background-color: #bdc3c7;
+    color: white;
+}
+
+.form-btn.safe-btn:hover,
+.form-btn.cancel:hover {
+    background-color: #95a5a6;
+    transform: translateY(-2px);
+}
+
+.form-actions {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+/* Gaya untuk Kartu Pesan Kosong */
+.empty-state-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background-color: var(--card-background);
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 40px 20px;
+    margin-top: 50px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.empty-state-card .icon {
+    font-size: 3em;
+    color: var(--accent-color);
+    margin-bottom: 15px;
+}
+
+.empty-state-card .title {
+    font-size: 1.4em;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 8px;
+}
+
+.empty-state-card .message {
+    font-size: 1em;
+    color: var(--light-text-color);
+    line-height: 1.5;
+}
+
+#electricity-bill-list {
+    display: flex;
+    flex-direction: column;
+}
+
+/* PERBAIKAN: Mengembalikan tata letak kartu tagihan menjadi vertikal */
+.database-card {
+    margin-bottom: 20px;
+    box-sizing: border-box; /* Memastikan padding tidak melebihi lebar elemen */
+}
+
+
+/* ===========================================
+/* GAYA BARU UNTUK TIPOGRAFI
+/* Menjadikan tampilan teks lebih elegan dan profesional
+/* =========================================== */
+
+/* Gaya untuk semua judul h3 dalam konten utama */
+#content-area h3 {
+    position: relative;
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 1.8em;
+    color: #2c3e50; /* Warna yang lebih gelap dan berkelas */
+    margin-bottom: 25px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--accent-color); /* Garis bawah yang elegan */
+}
+
+/* Gaya untuk paragraf */
+#content-area p {
+    font-family: 'Roboto', sans-serif; /* Menggunakan font yang berbeda untuk body text */
+    font-size: 1em;
+    line-height: 1.8;
+    color: #495057; /* Warna abu-abu tua untuk kenyamanan membaca */
+    margin-bottom: 15px;
+}
+
+/* Gaya untuk elemen list (aturan, fasilitas, dll) */
+#content-area ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    background-color: #f8f9fa; /* Latar belakang untuk membedakan list */
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+#content-area ul li {
+    position: relative;
+    padding: 12px 15px 12px 40px;
+    margin-bottom: 10px;
+    font-size: 0.95em;
+    color: #495057;
+    background-color: #ffffff;
+    border-left: 4px solid #0d47a1; /* Garis vertikal di samping */
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease;
+}
+
+#content-area ul li:hover {
+    transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Tambahkan ikon kustom untuk list */
+#content-area ul li::before {
+    content: "\f058"; /* Icon checkmark circle dari Font Awesome */
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #28a745;
+    font-size: 1.1em;
+}
+
+/* Gaya untuk garis pemisah */
+#content-area hr {
+    border: none;
+    height: 1px;
+    background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(13, 71, 161, 0.3), rgba(0, 0, 0, 0));
+    margin: 30px 0;
+}
+
+/* Gaya untuk teks penting atau pengumuman */
+#content-area strong {
+    font-weight: 700;
+    color: #0d47a1;
+    background-color: #e3f2fd;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* Gaya untuk elemen-elemen di dalam tab agar tidak terpengaruh oleh gaya global */
+.tab-pane h3 {
+    color: var(--primary-color);
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 1.5em;
+    padding-left: 0;
+    border-bottom: none;
+}
+/* Gaya untuk tombol Pengumuman di halaman Database */
+.announcement-btn {
+    background-color: #ffc107;
+    color: var(--text-color);
+}
+
+.announcement-btn:hover {
+    background-color: #e0a800;
+    color: white;
+}
+
+/* === GAYA BARU: OPSI 1 (MODERN & RAMPING) === */
+.progress-loader-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 20px;
+    margin-top: 40px;
+}
+
+.progress-text {
+    font-size: 1.2em;
+    font-weight: 500;
+    color: var(--light-text-color);
+    margin-bottom: 25px;
+}
+
+.progress-bar-wrapper {
+    width: 100%;
+    max-width: 280px;
+    height: 28px;
+    background-color: #f0f4f8;
+    border-radius: 6px;
+    padding: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    position: relative;
+}
+
+.progress-bar-inner {
+    width: 0%;
+    height: 100%;
+    background-color: var(--primary-color);
+    border-radius: 4px;
+    transition: width 0.2s ease-out;
+}
+
+.progress-percentage {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.8em;
+    font-weight: 700;
+    color: white;
+    mix-blend-mode: difference; /* Efek teks keren yang warnanya berubah */
+}
+
+/* === GAYA BARU UNTUK KARTU SUKSES KUITANSI === */
+.success-card {
+    background-color: var(--card-background);
+    border-radius: var(--border-radius-base);
+    box-shadow: var(--shadow-base);
+    padding: 30px 25px;
+    text-align: center;
+    border-top: 5px solid #28a745;
+    margin-top: 30px;
+}
+
+.success-icon-wrapper {
+    width: 70px;
+    height: 70px;
+    margin: 0 auto 20px auto;
+    background-color: #e8f5e9;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.success-icon-wrapper .fa-check-circle {
+    font-size: 3em;
+    color: #28a745;
+}
+
+.success-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6em;
+    color: var(--primary-color);
+    margin: 0 0 10px 0;
+}
+
+.success-message {
+    font-size: 0.95em;
+    color: var(--light-text-color);
+    line-height: 1.6;
+    max-width: 300px;
+    margin: 0 auto;
+}
+
+/* Tata letak tombol di bagian atas */
+.header-with-button-compact {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.button-group-top {
+    display: flex;
+    gap: 8px; /* Mengurangi jarak antar tombol atas */
+}
+
+/* Tata letak tombol CRUD di bagian bawah */
+.crud-buttons-bottom {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end; /* Memindahkan tombol ke kanan */
+    margin-top: 20px;
+}
+
+/* CSS untuk versi mobile */
+@media (max-width: 768px) {
+    .header-with-button-compact {
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 5px;
+    }
+
+    .button-group-top {
+        margin-top: 10px;
+    }
+
+    .header-with-button-compact h3 {
+        width: 100%;
+        text-align: left;
+    }
+
+    .crud-buttons-bottom {
+        justify-content: flex-end;
+        margin-top: 20px;
+    }
+}
+
+/* Warna hijau untuk tombol Database dan Data Sheet */
+#database-btn,
+.datasheet-btn {
+    background-color: #2ecc71 !important; /* Warna hijau */
+}
+
+/* Efek hover untuk tombol Database dan Data Sheet */
+#database-btn:hover,
+.datasheet-btn:hover {
+    background-color: #27ae60 !important; /* Warna hijau yang lebih gelap saat kursor di atasnya */
+}
+
+/* Gaya untuk tombol Cek via Spreadsheet */
+.table-footer a.form-btn {
+    display: inline-block;
+    padding: 8px 15px; /* Mengurangi padding untuk membuat tombol lebih kecil */
+    font-size: 14px;  /* Mengurangi ukuran font */
+    background-color: #27ae60;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: background-color 0.3s ease;
+}
+
+.table-footer a.form-btn:hover {
+    background-color: #229954; /* Efek hover */
+}
+/* Gaya untuk footer tabel */
+.table-footer td {
+    border: none !important;
+    text-align: left; /* Ini yang membuat tombol di kiri */
+    padding-top: 5px; /* Mengurangi jarak di atas tombol */
+}
+
+/* Gaya untuk tombol di dalam footer */
+.table-footer a.form-btn {
+    display: inline-block;
+    padding: 8px 15px;
+    font-size: 14px;
+    background-color: #27ae60;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: background-color 0.3s ease;
+}
+
+.table-footer a.form-btn:hover {
+    background-color: #229954;
+}
+
+/* Gaya untuk tombol Database */
+#database-btn {
+    background-color: var(--primary-color) !important; /* Menggunakan warna biru */
+}
+
+/* Efek hover untuk tombol Database */
+#database-btn:hover {
+    background-color: #0056b3 !important; /* Warna yang lebih gelap saat kursor di atasnya */
+}
+
+/* Gaya khusus untuk kolom Aksi (paling kiri) */
+.spreadsheet-table th:first-child,
+.spreadsheet-table td:first-child {
+    background-color: #f0f8ff; /* Warna biru muda yang spesial */
+    width: 40px; /* Lebar kolom aksi dibuat lebih kecil */
+    text-align: center;
+}
+
+/* Menyesuaikan lebar kolom Nomor dan meratakan ke tengah */
+.spreadsheet-table th:nth-child(2),
+.spreadsheet-table td:nth-child(2) {
+    width: 40px; /* Membuat kolom Nomor lebih kecil */
+    text-align: center;
+}
+
+/* Meratakan kolom Kamar ke tengah */
+.spreadsheet-table th:nth-child(3),
+.spreadsheet-table td:nth-child(3) {
+    text-align: center;
+}
+
+/* Styling untuk radio button kustom */
+.radio-container {
+    display: block;
+    position: relative;
+    padding-left: 20px; /* Jarak antara lingkaran dan teks */
+    cursor: pointer;
+    font-size: 14px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Sembunyikan radio button asli */
+.radio-container input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+/* Buat elemen kustom (lingkaran) */
+.radio-custom {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* Pusatkan lingkaran */
+    height: 18px;
+    width: 18px;
+    background-color: #eee;
+    border-radius: 50%;
+    border: 2px solid #ccc;
+    transition: all 0.2s ease-in-out;
+}
+
+/* Efek saat kursor di atasnya */
+.radio-container:hover input ~ .radio-custom {
+    background-color: #ccc;
+}
+
+/* Efek saat radio button dicentang */
+.radio-container input:checked ~ .radio-custom {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Buat titik di dalam lingkaran yang dicentang */
+.radio-custom:after {
+    content: "";
+    position: absolute;
+    display: none;
+}
+
+/* Tampilkan titik saat dicentang */
+.radio-container input:checked ~ .radio-custom:after {
+    display: block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: white;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Gaya untuk modal KTP */
+#ktp-modal-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+#ktp-modal {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    max-width: 90%;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+#ktp-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+}
+
+#ktp-modal .modal-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 20px;
+}
+
+#ktp-image-preview {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+
+/* 1. Latar Belakang Gelap (Backdrop) */
+/* Selector [id$="-modal-backdrop"] akan menargetkan semua modal Anda */
+[id$="-modal-backdrop"] {
+    position: fixed; /* <-- SANGAT PENTING: Membuatnya melayang relatif terhadap layar */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* Warna hitam transparan */
+    z-index: 1000; /* <-- SANGAT PENTING: Memastikan posisinya paling atas */
+
+    /* Untuk menengahkan kotak modal di dalamnya */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    /* Transisi untuk efek muncul/hilang */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+/* 2. Kotak Modal (Kontainer Putih) */
+.modal-container {
+    background-color: white;
+    padding: 25px 30px;
+    border-radius: 12px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+    width: 90%;
+    max-width: 500px; /* Batas lebar maksimum */
+    transform: scale(0.95);
+    transition: transform 0.3s ease;
+}
+
+/* 3. Aturan untuk Menampilkan Modal */
+[id$="-modal-backdrop"].show {
+    opacity: 1;
+    visibility: visible;
+}
+
+[id$="-modal-backdrop"].show .modal-container {
+    transform: scale(1);
+}
+
+
+body.modal-open #back-button,
+body.modal-open #home-button {
+    display: none;
+}
+
