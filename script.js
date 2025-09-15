@@ -1,5 +1,5 @@
 // ================= KONFIGURASI =================
-const API_URL = 'https://script.google.com/macros/s/AKfycbw1RLMX232Ttrj1uqt4o6Lj98O8go35pd9k8SBeXUvSQvLcH49IL7KR3I0n9oIMsXIi/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbw5LewEhU_VRttNiOGcxQo-qDtG51IcZ8jhKmKF-ZuPm0irFBT1DHw00_7V9tv4dfqk/exec';
 const API_DATA_SHEET = 'https://script.google.com/macros/s/AKfycby2gRbprxpoB5xRodjdSOWU9mAncI3ACR0jXkbo6rvW2NG8jzXSbYeLGq8Fn1nfhIujNQ/exec';
 let databaseData = { penghuni: [] };
 const allRooms = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8', 'D9', 'D10'];
