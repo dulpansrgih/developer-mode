@@ -263,7 +263,18 @@
 .database-form input[type="text"],
 .database-form input[type="date"],
 .database-form input[type="tel"],
+.database-form select,
 #content-area form input[type="number"],
+.custom-file-upload-container {
+    width: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.95em;
+    background-color: #f8f8f8;
+}
 
 .database-form select {
     width: 100%;
@@ -1163,8 +1174,8 @@
     transform: translate(-50%, -50%);
 }
 
-/* Gaya untuk modal KTP */
-#ktp-modal-backdrop {
+/* Gaya untuk modal ID */
+#id-modal-backdrop {
     display: none;
     position: fixed;
     top: 0;
@@ -1177,7 +1188,7 @@
     align-items: center;
 }
 
-#ktp-modal {
+#id-modal {
     background-color: #fff;
     padding: 20px;
     border-radius: 12px;
@@ -1189,7 +1200,7 @@
     gap: 20px;
 }
 
-#ktp-modal .modal-header {
+#id-modal .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1198,7 +1209,7 @@
     margin-bottom: 15px;
 }
 
-#ktp-modal .modal-body {
+#id-modal .modal-body {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1206,7 +1217,7 @@
     gap: 20px;
 }
 
-#ktp-image-preview {
+#id-image-preview {
     max-width: 100%;
     height: auto;
     border-radius: 8px;
@@ -1264,3 +1275,262 @@ body.modal-open #home-button {
     display: none;
 }
 
+
+
+/* --- Styling Pop-up Unggah File --- */
+
+/* Latar Belakang Gelap (Backdrop) */
+[id$="-modal-backdrop"] {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+[id$="-modal-backdrop"].show {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Kontainer Pop-up (Kotak Putih) */
+.modal-container {
+    background-color: var(--card-background);
+    padding: 30px;
+    border-radius: var(--border-radius-base);
+    box-shadow: var(--shadow-base);
+    width: 90%;
+    max-width: 400px;
+    transform: scale(0.95);
+    transition: transform 0.3s ease;
+    position: relative;
+}
+
+[id$="-modal-backdrop"].show .modal-container {
+    transform: scale(1);
+}
+
+/* Tombol Tutup */
+.modal-close-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #f0f4f8;
+    border: 1px solid #e0e0e0;
+    color: var(--light-text-color);
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.modal-close-btn:hover {
+    background-color: #e74c3c;
+    color: white;
+    transform: rotate(90deg) scale(1.1);
+    border-color: #e74c3c;
+}
+
+/* Header Modal Baru (sesuai gambar) */
+.modal-header-custom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--accent-color);
+    margin-bottom: 25px;
+}
+
+.modal-header-custom .title {
+    margin-bottom: 0;
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    color: var(--primary-color);
+    font-size: 1.6rem;
+    flex: 1; /* Biarkan judul mengambil sisa ruang */
+    text-align: center; /* Pusatkan teks judul */
+}
+
+/* Tampilan Form */
+.upload-card {
+    background-color: transparent;
+    border-radius: none;
+    box-shadow: none;
+    padding: 0;
+    text-align: left;
+}
+
+/* Subjudul */
+.upload-card .subtitle {
+    text-align: center;
+    color: var(--light-text-color);
+    margin-bottom: 30px;
+    margin-top: -20px;
+}
+
+/* Gaya Input Umum */
+.input {
+    width: 100%;
+    padding: 12px;
+    box-sizing: border-box;
+    margin-top: 8px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.95em;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    background-color: #f8f8f8;
+}
+
+.input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(66, 165, 245, 0.2);
+}
+
+/* Gaya untuk catatan peringatan */
+.custom-note {
+    font-size: 0.8em;
+    color: #e74c3c !important;
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+}
+
+.custom-note .fas {
+    font-size: 1em;
+}
+
+/* Area Drag and Drop */
+.drag-drop-area {
+    border: 2px dashed var(--accent-color);
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    background-color: #f0f4f8;
+    color: var(--light-text-color);
+}
+
+.drag-drop-area:hover {
+    background-color: #e3f2fd;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.drag-drop-area.highlight {
+    border-color: var(--primary-color);
+    background-color: #e3f2fd;
+    color: var(--primary-color);
+}
+
+.upload-icon {
+    font-size: 3em;
+    margin-bottom: 15px;
+    color: var(--primary-color);
+}
+
+.drag-drop-text {
+    font-size: 1em;
+    margin: 0;
+    font-weight: 500;
+}
+
+/* Teks nama file yang dipilih */
+.selected-file-name {
+    font-size: 0.9em;
+    color: var(--text-color);
+    text-align: center;
+    margin-top: 15px;
+}
+
+/* Tombol Upload & Simpan */
+#modal-submit-button {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 20px;
+    font-size: 1em;
+    font-weight: 600;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+#modal-submit-button:hover:not(:disabled) {
+    background-color: #0c3b8a;
+    transform: translateY(-2px);
+}
+
+#modal-submit-button:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+}
+
+/* Animasi Spinner */
+.fa-spinner {
+    animation: fa-spin 1s infinite linear;
+}
+
+@keyframes fa-spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Gaya Khusus untuk Tombol Draft Susantoro */
+.draft-btn {
+    background-color: #f39c12; /* Warna Oranye */
+}
+
+/* Efek hover untuk tombol oranye */
+.draft-btn:hover {
+    background-color: #e67e22; /* Warna Oranye lebih gelap saat hover */
+}
+
+/* Container untuk memastikan iframe responsif */
+.iframe-container {
+    position: relative;
+    width: 100%;
+    /* Atur tinggi sesuai kebutuhan, misalnya 75vh */
+    height: 75vh; 
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.responsive-iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+}

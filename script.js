@@ -1,5 +1,5 @@
 // ================= KONFIGURASI =================
-const API_URL = 'https://script.google.com/macros/s/AKfycbw5LewEhU_VRttNiOGcxQo-qDtG51IcZ8jhKmKF-ZuPm0irFBT1DHw00_7V9tv4dfqk/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbx2WklmyAl8HTrNuC5MeTGsoEIEQ37G5Ev2s_7oq9b4cvrVfiF0lwRVUZ-B2Fnwi1IS/exec';
 const API_DATA_SHEET = 'https://script.google.com/macros/s/AKfycby2gRbprxpoB5xRodjdSOWU9mAncI3ACR0jXkbo6rvW2NG8jzXSbYeLGq8Fn1nfhIujNQ/exec';
 let databaseData = { penghuni: [] };
 const allRooms = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8', 'D9', 'D10'];
@@ -11,7 +11,7 @@ let selectedRowId = null;
 // Fungsi baru untuk membuat animasi Progress Bar
 function getProgressLoaderHtml(text = 'Memuat Data...') {
     return `
-        <div class="progress-loader-container"> 
+        <div class="progress-loader-container">
             <div class="progress-text">${text}</div>
             <div class="progress-bar-wrapper">
                 <div id="progress-bar-inner" class="progress-bar-inner"></div>
@@ -52,6 +52,76 @@ function goBack() {
         updateRealtimeDisplay();
         setInterval(updateRealtimeDisplay, 1000);
 
+        const uploadForm = document.getElementById("modal-upload-form");
+    if (uploadForm) {
+        const fileInput = document.getElementById("modal-file-input");
+        const fileNameDisplay = document.getElementById("modal-file-name-display");
+        const submitButton = document.getElementById("modal-submit-button");
+        const messageDiv = document.getElementById("modal-message");
+
+        fileInput.addEventListener("change", function () {
+            fileNameDisplay.textContent = this.files.length > 0 ? this.files[0].name : "Belum ada file dipilih";
+        });
+
+        uploadForm.addEventListener("submit", async function (e) {
+            e.preventDefault();
+             // Cek apakah file sudah dipilih
+            const fileInput = document.getElementById("modal-file-input");
+            if (fileInput.files.length === 0) {
+                showCustomAlert("Pilih file yang ingin diunggah terlebih dahulu.");
+                return; // Hentikan eksekusi fungsi
+            }
+
+            // Lanjutkan dengan proses pengiriman form jika file ada
+            const submitButton = document.getElementById("modal-submit-button");
+            const messageDiv = document.getElementById("modal-message");
+
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengirim...';
+            messageDiv.style.display = "block";
+            messageDiv.className = "notification is-warning";
+
+            try {
+                const formData = {
+                    kamar: document.getElementById('modal-kamar-input').value,
+                    fileData: await fileToBase64(fileInput.files[0])
+                };
+
+                const scriptURL = "https://script.google.com/macros/s/AKfycbxvpvpJsd4apXT14y8oYhjtremcloD-gGS3DawA5H0xKxohTxRp92APQ79NE4OVldz9/exec";
+
+                const response = await fetch(scriptURL, {
+                    method: "POST",
+                    body: JSON.stringify(formData),
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                });
+
+                const result = await response.json();
+
+                if (result.status === "success") {
+                    showCustomAlert(result.message);
+
+                    // Ambil nama file dari input
+                    const uploadedFileName = fileInput.files[0].name;
+
+                    // Perbarui div dengan nama file yang berhasil diunggah
+                    const uploadedFileDisplay = document.getElementById('uploaded-file-display');
+                    if (uploadedFileDisplay) {
+                        uploadedFileDisplay.textContent = `File "${uploadedFileName}" berhasil diunggah.`;
+                    }
+
+                    closeUploadModal();
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                showCustomAlert("Error: " + error.message);
+            } finally {
+                submitButton.disabled = false;
+                submitButton.innerHTML = 'Upload & Simpan';
+            }
+        });
+    }
+
 // GANTI SELURUH BLOK INI DI script.js
 document.body.addEventListener('click', (e) => {
     const target = e.target;
@@ -82,6 +152,11 @@ document.body.addEventListener('click', (e) => {
     else if (target.closest('#home-button')) {
         goHome();
     }
+
+    else if (target.closest('#susantoro-draft-btn')) {
+        displayContent('susantoro-draft-content');
+    }
+
     else if (target.closest('#modal-cancel-btn') || target.closest('#modal-submit-btn')) {
         handlePasswordModal(target);
     }
@@ -102,6 +177,16 @@ document.body.addEventListener('click', (e) => {
     }
     else if (target.closest('.reminder-btn')) {
         handleReminderClick(target.closest('.reminder-btn'));
+    }
+    else if (target.closest('.view-id-btn')) {
+    e.preventDefault();
+    const imageUrl = target.dataset.url;
+    showIdModal(imageUrl);
+    }
+    else if (target.closest('#id-modal-backdrop .modal-close-btn')) {
+    const modal = document.getElementById('id-modal-backdrop');
+    modal.classList.remove('show');
+    setTimeout(() => modal.classList.add('hidden'), 300);
     }
     // --- PERBAIKAN PENTING ---
     // Dibuat lebih spesifik agar tidak konflik
@@ -401,7 +486,7 @@ function renderDatabaseForm(contentArea, data) {
                 <div class="empty-state-card" style="margin-top: 0; padding: 30px; border: 2px dashed #e74c3c; box-shadow: none;">
                     <i class="fas fa-exclamation-triangle icon" style="font-size: 3.5em; color: #e74c3c;"></i>
                     <h4 class="title" style="font-size: 1.6em; color: #c0392b;">Konfirmasi Pengosongan Kamar</h4>
-                    <p class="message" style="max-width: 350px; margin: 10px auto;">Anda akan menghapus semua data penghuni. Status kamar akan diubah menjadi **Tersedia**.</p>
+                    <p class="message" style="max-width: 350px; margin: 10px auto;">Anda akan menghapus semua data penghuni. Status kamar akan diubah menjadi <strong style="color: var(--primary-color);">Tersedia</strong>.</p>
                     <p class="message" style="font-weight: 700; color: #c0392b; margin-top:10px;">Tindakan ini tidak dapat dibatalkan.</p>
                     <div class="form-actions" style="justify-content: center; margin-top: 25px;">
                         <button type="button" id="apply-empty-btn" class="form-btn destructive-btn"><i class="fas fa-trash-alt"></i> Ya, Kosongkan Data</button>
@@ -428,9 +513,13 @@ function renderDatabaseForm(contentArea, data) {
                     <label for="form-nik">NIK KTP (16 Angka):</label>
                     <input type="text" id="form-nik" name="nik" value="${data.nik || ''}" maxlength="16" pattern="[0-9]{16}" title="Harus 16 digit angka">
 
-                    <label for="form-foto-ktp">Upload/Ganti Foto KTP:</label>
-                    <input type="file" id="form-foto-ktp" name="fotoKtp" accept="image/*" style="padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; width: 100%; box-sizing: border-box; background-color: #f8f8f8;">
-                    ${data.fotoKtpUrl ? `<small>Sudah ada KTP. Upload baru untuk mengganti.</small>` : ''}
+                    <label class="label">Upload ID:</label>
+                    <div class="custom-file-upload-container">
+                        <button type="button" class="custom-file-btn" onclick="openUploadModal('${data.kamar}')">
+                            <i class="fas fa-upload"></i> Pilih File
+                        </button>
+                          <span class="custom-file-text">${data.FileLink ? 'File sudah terunggah' : 'Belum ada file dipilih'}</span>
+                    </div>
 
                     <label for="form-whatsapp">Nomor WhatsApp:</label>
                     <input type="tel" id="form-whatsapp" name="whatsapp" value="${data.whatsapp || ''}" placeholder="Contoh: 081234567890">
@@ -488,9 +577,7 @@ function renderDatabaseForm(contentArea, data) {
 
 /**
  * Menangani proses pengiriman data form ke Google Apps Script.
- * Fungsi ini sudah mencakup logika untuk file KTP (opsional).
  */
-// GANTIKAN FUNGSI INI DI script.js
 async function handleFormSubmit(eventOrData, isEmptying = false, buttonEl = null) {
     // Mencegah event default jika berasal dari form submit
     if (eventOrData && eventOrData.target) {
@@ -513,18 +600,17 @@ async function handleFormSubmit(eventOrData, isEmptying = false, buttonEl = null
             formData.append('kamar', eventOrData.kamar);
             formData.append('nama', '');
             formData.append('nik', '');
-            formData.append('fotoKtpUrl', '');
             formData.append('whatsapp', '');
             formData.append('ttl', '');
             formData.append('alamat', '');
             formData.append('status', '');
             formData.append('jatuhTempo', '');
             formData.append('nominal', '');
+            formData.append('FileLink', '');
             formData.append('statusKamar', 'Tersedia');
         } else {
             // Logika untuk mengisi data penghuni dari form
             const form = eventOrData.target;
-            const fileInput = form.querySelector('#form-foto-ktp');
 
             // Ambil semua data dari form
             formData.append('kamar', form.querySelector('[name="kamar"]').value);
@@ -538,10 +624,6 @@ async function handleFormSubmit(eventOrData, isEmptying = false, buttonEl = null
             formData.append('nominal', form.querySelector('[name="nominal"]').value);
             formData.append('statusKamar', form.querySelector('[name="statusKamar"]').value);
 
-            // Cek apakah ada file yang di-upload
-            if (fileInput.files.length > 0) {
-                formData.append('fotoKtp', fileInput.files[0]);
-            }
         }
         
         // Kirim data ke API
@@ -645,6 +727,20 @@ function displayContent(pageId) {
         'live-chat': () => renderLiveChatForm(contentArea),
         // Tambahkan halaman generate pembayaran di sini agar bisa diakses oleh displayContent
         'generate-pembayaran-content': () => contentArea.innerHTML = document.getElementById('generate-pembayaran-content').innerHTML,
+        'susantoro-draft-content': () => contentArea.innerHTML = document.getElementById('susantoro-draft-content').innerHTML,
+        'catatan-view': () => {
+        contentArea.innerHTML = `
+            <h3 style="color: var(--primary-color); margin-bottom: 20px;">Catatan</h3>
+            <p>Ini adalah halaman untuk catatan. Anda bisa menambahkan konten form atau tabel di sini.</p>
+        `;  
+    },
+        'public-database-content': () => {
+            contentArea.innerHTML = document.getElementById('public-database-content').innerHTML;
+        },
+        'access-datasheet-content': () => {
+            contentArea.innerHTML = document.getElementById('access-datasheet-content').innerHTML;
+        }
+        
     };
 
     const renderFunction = pageRenderers[pageId] || (() => {
@@ -744,7 +840,7 @@ async function renderDatabaseContent(contentArea) {
             <div class="database-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
                 <h3 style="color: var(--primary-color); margin: 0;">Database Penghuni Kost</h3>
                 <div>
-                    <button id="datasheet-btn" class="form-btn datasheet-btn" data-page="datasheet-view"><i class="fas fa-file-excel"></i> Data Sheet</button>
+                    <button id="susantoro-draft-btn" class="form-btn draft-btn" data-page="susantoro-draft-menu"><i class="fas fa-user-circle"></i> Draft Susantoro</button>
                     <button id="refresh-data-btn" class="form-btn refresh-btn"><i class="fas fa-sync-alt"></i> Refresh</button>
                 </div>
             </div>`;
@@ -785,33 +881,55 @@ async function renderDatabaseContent(contentArea) {
                     </div>`;
             } else {
                 // Tampilan untuk kamar yang DIHUNI dengan TATA LETAK BARU
-                const fotoKtpHtml = `
-                    <div class="database-detail-item">
-                        <span>ID KTP (Foto KTP)</span>
-                        <span class="database-value">
-                            ${data.fotoKtpUrl ? `<a href="#" class="view-ktp-btn" style="color: var(--accent-color); font-weight: 600;" data-url="${data.fotoKtpUrl}">(Lihat KTP)</a>` : '<span>-</span>'}
-                        </span>
-                    </div>`;
+                
+                // >>> LOGIKA STATUS PEMBAYARAN SEWA <<<<<
+                let statusSewa = 'Lunas';
+                let statusSewaClass = 'status-lunas';
+                let statusSewaIcon = 'fas fa-check-circle';
 
-                let statusOtomatis = 'Lunas';
                 if (data.jatuhTempo && typeof data.jatuhTempo === 'string') {
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
                     const parts = data.jatuhTempo.split('-');
                     const jatuhTempo = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
                     if (jatuhTempo < today) {
-                        statusOtomatis = 'Belum Bayar';
+                        statusSewa = 'Belum Bayar';
+                        statusSewaClass = 'status-menunggak';
+                        statusSewaIcon = 'fas fa-exclamation-triangle';
                     }
                 }
-                let statusClass = (statusOtomatis === 'Lunas') ? 'status-lunas' : 'status-menunggak';
-                let statusIcon = (statusOtomatis === 'Lunas') ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle';
-                const statusPembayaranHtml = `
-                    <div class="database-detail-item">
-                        <span>Status Pembayaran</span>
-                        <span class="database-value ${statusClass}">
-                            <i class="${statusIcon}"></i> ${statusOtomatis}
-                        </span>
-                    </div>`;
+                
+                // >>> LOGIKA TAGIHAN LISTRIK <<<<<
+                const iuranListrik = parseInt(data.iuranListrik) || 0;
+                let totalTagihan = parseInt(data.nominal) || 0;
+                const statusTagihan = data.statusTagihan || 'Tidak Ada';
+                
+                let tagihanListrikHtml = '';
+                if (statusTagihan === 'Lunas') {
+                    tagihanListrikHtml = `<span class="database-value status-lunas">Rp ${formatRupiah(0)}</span>`;
+                } else if (statusTagihan === 'Menunggak') {
+                    tagihanListrikHtml = `<span class="database-value status-menunggak">Rp ${formatRupiah(totalTagihan)}</span>`;
+                } else if (statusTagihan === 'Belum Bayar') {
+                    tagihanListrikHtml = `<span class="database-value status-menunggak">Rp ${formatRupiah(totalTagihan)}</span>`;
+                }
+                
+                let jumlahBulanHtml = '';
+                if (statusTagihan === 'Menunggak' && data.jumlahBulan > 0) {
+                    jumlahBulanHtml = `
+                        <div class="database-detail-item">
+                            <span>Jumlah Bulan</span>
+                            <span class="database-value" style="color: #e74c3c;">${data.jumlahBulan} bulan</span>
+                        </div>`;
+                }
+
+                const statusTagihanIcon = (statusTagihan === 'Lunas') ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle';
+                const statusTagihanClass = (statusTagihan === 'Lunas') ? 'status-lunas' : 'status-menunggak';
+
+
+                const canViewId = data.FileLink && data.nik;
+                const viewIdHtml = canViewId 
+                    ? `<button class="view-id-btn" data-url="${data.FileLink}">Lihat</button>` 
+                    : `<button class="view-id-btn disabled-btn" disabled>Lihat</button>`;
                 
                 html += `
                     <div class="database-card ${cardClass}" data-kamar="${data.kamar}">
@@ -820,24 +938,28 @@ async function renderDatabaseContent(contentArea) {
                             <span style="font-weight: normal; font-size: 0.9em;">NIK: ${data.nik || '-'}</span>
                         </h4>
                         
-                        <!-- Detail Pribadi -->
-                        ${fotoKtpHtml}
+                        <div class="database-detail-item"><span>ID KTP/SIM <span class="upload-file-text">(Upload File)</span></span><span class="database-value">${viewIdHtml}</span></div>
                         <div class="database-detail-item"><span>No. WhatsApp</span><span class="database-value whatsapp-number">${data.whatsapp || '-'}</span></div>
                         <div class="database-detail-item"><span>Tempat, Tanggal Lahir</span><span class="database-value">${data.ttl || '-'}</span></div>
                         <div class="database-detail-item"><span>Alamat</span><span class="database-value">${data.alamat || '-'}</span></div>
                         <div class="database-detail-item"><span>Status</span><span class="database-value">${data.status || '-'}</span></div>
 
-                        <!-- Garis Pemisah -->
                         <hr style="border: none; height: 1px; background-image: linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,0.1), rgba(0,0,0,0)); margin: 15px 0;">
 
-                        <!-- Detail Pembayaran -->
                         <div class="database-detail-item"><span>Jumlah Pembayaran</span><span class="database-value">Rp ${formatRupiah(data.nominal || '0')}</span></div>
-                        ${statusPembayaranHtml}
+                        <div class="database-detail-item"><span>Status Pembayaran</span><span class="database-value ${statusSewaClass}"><i class="${statusSewaIcon}"></i> ${statusSewa}</span></div>
                         <div class="database-detail-item"><span>Jatuh Tempo</span><span class="database-value">${formatDate(data.jatuhTempo)}</span></div>
+                        
+                        <hr style="border: none; height: 1px; background-image: linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,0.1), rgba(0,0,0,0)); margin: 15px 0;">
+
+                        <div class="database-detail-item"><span>Tagihan Listrik</span><span class="database-value">${tagihanListrikHtml}</span></div>
+                        <div class="database-detail-item"><span>Status Tagihan</span><span class="database-value ${statusTagihanClass}"><i class="${statusTagihanIcon}"></i> ${statusTagihan}</span></div>
+                        ${jumlahBulanHtml}
+
                         <div class="database-detail-item"><span>Status Kamar</span><span class="database-value status-tidak-tersedia"><i class="fas fa-times-circle"></i> ${data.statusKamar}</span></div>
                         
-                        <!-- Tombol Aksi -->
                         <div class="card-actions">
+                            <button class="form-btn status-btn" data-kamar="${data.kamar}"><i class="fas fa-info-circle"></i> Status</button>
                             <button class="form-btn generate-btn" data-nama="${data.nama}" data-kamar="${data.kamar}" data-nominal="${data.nominal}" data-jatuh-tempo="${data.jatuhTempo}" data-whatsapp="${data.whatsapp || ''}"><i class="fas fa-receipt"></i> e-Kwitansi</button>
                             <button class="form-btn reminder-btn" data-nama="${data.nama}" data-kamar="${data.kamar}" data-nominal="${data.nominal}" data-jatuh-tempo="${data.jatuhTempo}" data-whatsapp="${data.whatsapp || ''}"><i class="fas fa-bell"></i></button>
                             <button class="form-btn edit-btn" data-kamar="${data.kamar}"><i class="fas fa-edit"></i> Edit</button>
@@ -870,7 +992,7 @@ async function renderDatabaseContent(contentArea) {
 // ===============================================
 
 async function renderViewOnlyDatabase(contentArea) {
-    contentArea.innerHTML = getProgressLoaderHtml('Memuat Penghuni Kos...');
+    contentArea.innerHTML = getProgressLoaderHtml('Memuat Penghuni Kost....');
     const bar = document.getElementById('progress-bar-inner');
     const percentageText = document.getElementById('progress-percentage');
     let progress = 0;
@@ -893,40 +1015,86 @@ async function renderViewOnlyDatabase(contentArea) {
         const penghuniData = result.data.penghuni;
         let databaseHtml = `
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-                <button id="refresh-data-btn" class="form-btn refresh-btn" style="margin-top: 0;"><i class="fas fa-sync-alt"></i> Refresh Data</button>
                 <h3 style="color: var(--primary-color); margin: 0;">Daftar Penghuni Kost</h3>
+                <button id="refresh-data-btn" class="form-btn refresh-btn"><i class="fas fa-sync-alt"></i> Refresh</button>
             </div>
-            <p>Berikut adalah daftar semua penghuni kost.</p>`;
+            <p>Berikut adalah daftar semua penghuni kost yang aktif.</p>`;
 
         if (penghuniData.length > 0) {
             penghuniData.forEach(data => {
                 const isOwnerRoom = data.kamar === 'A1';
+                const isAvailable = data.statusKamar === 'Tersedia';
 
                 if (isOwnerRoom) {
-                    // KEMBALIKAN KARTU KHUSUS UNTUK PEMILIK
                     databaseHtml += `
                         <div class="database-card owner-room">
                             <h4><i class="fas fa-user-tie"></i> Kamar A1 - Pemilik</h4>
                             <div class="database-detail-item"><span>Status</span><span class="database-value">Tidak Disewakan</span></div>
                         </div>`;
+                } else if (isAvailable) {
+                    // Kamar kosong tidak ditampilkan di halaman publik ini
+                    return; 
                 } else {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const jatuhTempo = new Date(data.jatuhTempo);
-                    let statusOtomatis = jatuhTempo < today ? 'Belum Bayar' : 'Lunas';
-                    let statusClass = jatuhTempo < today ? 'status-menunggak' : 'status-lunas';
-                    let statusIcon = jatuhTempo < today ? 'fas fa-exclamation-triangle' : 'fas fa-check-circle';
-                    const isAvailable = data.statusKamar === 'Tersedia';
+                    // === LOGIKA STATUS PEMBAYARAN SEWA ===
+                    let statusSewa = 'Lunas';
+                    let statusSewaClass = 'status-lunas';
+                    let statusSewaIcon = 'fas fa-check-circle';
+
+                    if (data.jatuhTempo && typeof data.jatuhTempo === 'string') {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const parts = data.jatuhTempo.split('-');
+                        const jatuhTempo = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                        if (jatuhTempo < today) {
+                            statusSewa = 'Belum Bayar';
+                            statusSewaClass = 'status-menunggak';
+                            statusSewaIcon = 'fas fa-exclamation-triangle';
+                        }
+                    }
+
+                    // === LOGIKA TAGIHAN LISTRIK ===
+                    const iuranListrik = parseInt(data.iuranListrik) || 0;
+                    let totalTagihan = parseInt(data.nominal) || 0;
+                    const statusTagihan = data.statusTagihan || 'Tidak Ada';
+
+                    let tagihanListrikHtml = '';
+                    if (statusTagihan === 'Lunas') {
+                        tagihanListrikHtml = `<span class="database-value status-lunas">Rp ${formatRupiah(0)}</span>`;
+                    } else if (statusTagihan === 'Menunggak') {
+                        tagihanListrikHtml = `<span class="database-value status-menunggak">Rp ${formatRupiah(totalTagihan)}</span>`;
+                    } else if (statusTagihan === 'Belum Bayar') {
+                        tagihanListrikHtml = `<span class="database-value status-menunggak">Rp ${formatRupiah(totalTagihan)}</span>`;
+                    }
+
+                    let jumlahBulanHtml = '';
+                    if (statusTagihan === 'Menunggak' && data.jumlahBulan > 0) {
+                        jumlahBulanHtml = `
+                            <div class="database-detail-item">
+                                <span>Jumlah Bulan</span>
+                                <span class="database-value" style="color: #e74c3c;">${data.jumlahBulan} bulan</span>
+                            </div>`;
+                    }
+
+                    const statusTagihanIcon = (statusTagihan === 'Lunas') ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle';
+                    const statusTagihanClass = (statusTagihan === 'Lunas') ? 'status-lunas' : 'status-menunggak';
+                    
                     const kamarStatusClass = isAvailable ? 'status-tersedia' : 'status-tidak-tersedia';
                     const kamarStatusIcon = isAvailable ? 'fas fa-check-circle' : 'fas fa-times-circle';
 
+
                     databaseHtml += `
                         <div class="database-card" data-kamar="${data.kamar}">
-                            <h4><i class="fas fa-user"></i> Kamar ${data.kamar} - ${data.nama || ''}</h4>
+                            <h4><i class="fas fa-user"></i> Kamar ${data.kamar} - ${data.nama}</h4>
                             <div class="database-detail-item"><span>No. WhatsApp</span><span class="database-value whatsapp-number">Tersembunyi...</span></div>
-                            <div class="database-detail-item"><span>Status Pembayaran</span><span class="database-value ${statusClass}"><i class="${statusIcon}"></i> ${statusOtomatis}</span></div>
-                            <div class="database-detail-item"><span>Nominal Pembayaran</span><span class="database-value">Rp ${formatRupiah(data.nominal || '0')}</span></div>
-                            <div class="database-detail-item"><span>Jatuh Tempo</span><span class="database-value">${formatDate(data.jatuhTempo)}</span></div>
+                            
+                            <div class="database-detail-item"><span>Jatuh Tempo Sewa</span><span class="database-value">${formatDate(data.jatuhTempo)}</span></div>
+                            <div class="database-detail-item"><span>Status Pembayaran Sewa</span><span class="database-value ${statusSewaClass}"><i class="${statusSewaIcon}"></i> ${statusSewa}</span></div>
+                            
+                            <hr style="border: none; height: 1px; background-image: linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,0.1), rgba(0,0,0,0)); margin: 15px 0;">
+
+                            <div class="database-detail-item"><span>Tagihan Listrik</span><span class="database-value">${tagihanListrikHtml}</span></div>
+                            <div class="database-detail-item"><span>Status Tagihan</span><span class="database-value ${statusTagihanClass}"><i class="${statusTagihanIcon}"></i> ${statusTagihan}</span></div>
+                            ${jumlahBulanHtml}
                             <div class="database-detail-item"><span>Status Kamar</span><span class="database-value ${kamarStatusClass}"><i class="${kamarStatusIcon}"></i> ${data.statusKamar || 'Tidak Ada Data'}</span></div>
                         </div>`;
                 }
@@ -1038,7 +1206,9 @@ async function renderViewOnlyRooms(contentArea) {
 // ===============================================
 // ============== DAFTAR VIEW ONLY DATABASE ===============
 // ===============================================
-// GANTI SELURUH FUNGSI renderViewOnlyDatabase ANDA DENGAN INI
+// ===============================================
+// ============== DAFTAR VIEW ONLY DATABASE ===============
+// ===============================================
 async function renderViewOnlyDatabase(contentArea) {
     contentArea.innerHTML = getProgressLoaderHtml('Memuat Penghuni Kost....');
     const bar = document.getElementById('progress-bar-inner');
@@ -1059,7 +1229,7 @@ async function renderViewOnlyDatabase(contentArea) {
         if (!result.success || !result.data || !result.data.penghuni) {
             throw new Error(result.message || 'Format data dari server salah.');
         }
-        
+
         const penghuniData = result.data.penghuni;
         let databaseHtml = `
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
@@ -1081,30 +1251,68 @@ async function renderViewOnlyDatabase(contentArea) {
                         </div>`;
                 } else if (isAvailable) {
                     // Kamar kosong tidak ditampilkan di halaman publik ini
-                    return; 
+                    return;
                 } else {
-                    let statusOtomatis = 'Lunas';
+                    // === LOGIKA STATUS PEMBAYARAN SEWA ===
+                    let statusSewa = 'Lunas';
+                    let statusSewaClass = 'status-lunas';
+                    let statusSewaIcon = 'fas fa-check-circle';
+
                     if (data.jatuhTempo && typeof data.jatuhTempo === 'string') {
                         const today = new Date();
                         today.setHours(0, 0, 0, 0);
                         const parts = data.jatuhTempo.split('-');
                         const jatuhTempo = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
                         if (jatuhTempo < today) {
-                            statusOtomatis = 'Belum Bayar';
+                            statusSewa = 'Belum Bayar';
+                            statusSewaClass = 'status-menunggak';
+                            statusSewaIcon = 'fas fa-exclamation-triangle';
                         }
                     }
 
-                    let statusClass = statusOtomatis === 'Lunas' ? 'status-lunas' : 'status-menunggak';
-                    let statusIcon = statusOtomatis === 'Lunas' ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle';
+                    // === LOGIKA TAGIHAN LISTRIK ===
+                    const iuranListrik = parseInt(data.iuranListrik) || 0;
+                    let totalTagihan = parseInt(data.nominal) || 0;
+                    const statusTagihan = data.statusTagihan || 'Tidak Ada';
+
+                    let tagihanListrikHtml = '';
+                    if (statusTagihan === 'Lunas') {
+                        tagihanListrikHtml = `<span class="database-value status-lunas">Rp ${formatRupiah(0)}</span>`;
+                    } else if (statusTagihan === 'Menunggak') {
+                        tagihanListrikHtml = `<span class="database-value status-menunggak">Rp ${formatRupiah(totalTagihan)}</span>`;
+                    } else if (statusTagihan === 'Belum Bayar') {
+                        tagihanListrikHtml = `<span class="database-value status-menunggak">Rp ${formatRupiah(totalTagihan)}</span>`;
+                    }
+
+                    let jumlahBulanHtml = '';
+                    if (statusTagihan === 'Menunggak' && data.jumlahBulan > 0) {
+                        jumlahBulanHtml = `
+                            <div class="database-detail-item">
+                                <span>Jumlah Bulan</span>
+                                <span class="database-value" style="color: #e74c3c;">${data.jumlahBulan} bulan</span>
+                            </div>`;
+                    }
+
+                    const statusTagihanIcon = (statusTagihan === 'Lunas') ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle';
+                    const statusTagihanClass = (statusTagihan === 'Lunas') ? 'status-lunas' : 'status-menunggak';
+
+                    const kamarStatusClass = isAvailable ? 'status-tersedia' : 'status-tidak-tersedia';
+                    const kamarStatusIcon = isAvailable ? 'fas fa-check-circle' : 'fas fa-times-circle';
 
                     databaseHtml += `
                         <div class="database-card" data-kamar="${data.kamar}">
                             <h4><i class="fas fa-user"></i> Kamar ${data.kamar} - ${data.nama}</h4>
                             <div class="database-detail-item"><span>No. WhatsApp</span><span class="database-value whatsapp-number">Tersembunyi...</span></div>
-                            <div class="database-detail-item"><span>Status Pembayaran</span><span class="database-value ${statusClass}"><i class="${statusIcon}"></i> ${statusOtomatis}</span></div>
-                            <!-- ================== PERUBAHAN DI SINI ================== -->
-                            <div class="database-detail-item"><span>Nominal Pembayaran</span><span class="database-value">Tersembunyi...</span></div>
-                            <div class="database-detail-item"><span>Jatuh Tempo</span><span class="database-value">${formatDate(data.jatuhTempo)}</span></div>
+
+                            <div class="database-detail-item"><span>Jatuh Tempo Sewa</span><span class="database-value">${formatDate(data.jatuhTempo)}</span></div>
+                            <div class="database-detail-item"><span>Status Pembayaran Sewa</span><span class="database-value ${statusSewaClass}"><i class="${statusSewaIcon}"></i> ${statusSewa}</span></div>
+
+                            <hr style="border: none; height: 1px; background-image: linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,0.1), rgba(0,0,0,0)); margin: 15px 0;">
+
+                            <div class="database-detail-item"><span>Tagihan Listrik</span><span class="database-value">${tagihanListrikHtml}</span></div>
+                            <div class="database-detail-item"><span>Status Tagihan</span><span class="database-value ${statusTagihanClass}"><i class="${statusTagihanIcon}"></i> ${statusTagihan}</span></div>
+                            ${jumlahBulanHtml}
+                            <div class="database-detail-item"><span>Status Kamar</span><span class="database-value ${kamarStatusClass}"><i class="${kamarStatusIcon}"></i> ${data.statusKamar || 'Tidak Ada Data'}</span></div>
                         </div>`;
                 }
             });
@@ -1112,6 +1320,7 @@ async function renderViewOnlyDatabase(contentArea) {
             databaseHtml += `<p style="text-align: center; color: var(--light-text-color);">Tidak ada data penghuni yang ditemukan.</p>`;
         }
         contentArea.innerHTML = databaseHtml;
+        document.getElementById('refresh-data-btn').addEventListener('click', () => renderViewOnlyDatabase(contentArea));
     } catch (error) {
         contentArea.innerHTML = `<p style="text-align: center; color: var(--light-text-color);">Gagal memuat data penghuni. ${error.message}</p>`;
     }
@@ -1527,8 +1736,8 @@ function buildTableRows(data) {
             <td>${item.kamar || '-'}</td>
             <td>${item.nama || '-'}</td>
             <td>
-                ${item.fotoKtpUrl && item.fotoKtpUrl !== '-' ? 
-                    `<a href="#" class="view-ktp-btn" data-url="${item.fotoKtpUrl}">Lihat KTP</a>` : 
+                ${item.FileLink && item.FileLink !== '-' ? 
+                    `<a href="#" class="view-id-btn" data-url="${item.FileLink}">Lihat ID</a>` : 
                     `<span>Data tidak ada</span>`}
             </td>
             <td></td>
@@ -1540,15 +1749,11 @@ function buildTableRows(data) {
 }
 
 
-// Fungsi baru untuk menampilkan modal KTP
-function showKtpModal(imageUrl) {
-    const modal = document.getElementById('ktp-modal-backdrop');
-    const imagePreview = document.getElementById('ktp-image-preview');
-    const downloadBtn = document.getElementById('ktp-download-btn');
-    
+// Fungsi baru untuk menampilkan modal ID Upload
+function showIdModal(imageUrl) {
+    const modal = document.getElementById('id-modal-backdrop');
+    const imagePreview = document.getElementById('id-image-preview');
     imagePreview.src = imageUrl;
-    downloadBtn.href = imageUrl;
-    
     modal.classList.remove('hidden');
     modal.classList.add('show');
 }
@@ -1556,17 +1761,13 @@ function showKtpModal(imageUrl) {
 // Tambahkan event listener untuk tombol "Lihat"
 document.body.addEventListener('click', (e) => {
     const target = e.target;
-    if (target.classList.contains('view-ktp-btn')) {
-        e.preventDefault();
-        const imageUrl = target.dataset.url;
-        showKtpModal(imageUrl);
-    }
-    // Tambahkan logika untuk menutup modal
-    else if (target.closest('#ktp-modal .modal-close-btn')) {
-        const modal = document.getElementById('ktp-modal-backdrop');
-        modal.classList.remove('show');
-        setTimeout(() => modal.classList.add('hidden'), 300);
-    }
+    function showIdModal(imageUrl) {
+    const modal = document.getElementById('id-modal-backdrop');
+    const imagePreview = document.getElementById('id-image-preview');
+    imagePreview.src = imageUrl;
+    modal.classList.remove('hidden');
+    modal.classList.add('show');
+}
 });
 
 // ===============================================
@@ -2135,7 +2336,7 @@ async function handleGenerateKuitansi(e) {
         <div id="receipt-card-render" style="width: 380px; font-family: 'Segoe UI', Arial, sans-serif; padding: 15px 25px 25px; box-sizing: border-box; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
     
         <div style="text-align: center; border-bottom: 2px solid #e0e0e0; padding-bottom: 15px; margin-bottom: 15px;">
-            <img src="images/logo-kwitansi.JPG" alt="Logo Kost Bu Yani" style="width: 120px; height: auto; margin-bottom: 5px;">
+            <img src="images/logo-kwitansi.jpg" alt="Logo Kost Bu Yani" style="width: 120px; height: auto; margin-bottom: 5px;">
             <h2 style="margin: 0; font-size: 1.8em; color: #1e3a8a;">KOST PUTRA BU YANI</h2>
             <p style="margin: 5px 0 0; font-size: 0.9em; color: #6b7280;">Kos Putra Bu Yani, Jalan Ngemplak No. 33, RT.4/RW.8, Sendangadi, Kec. Mlati, Kab. Sleman, Yogyakarta</p>
         </div>
@@ -2187,7 +2388,7 @@ async function handleGenerateKuitansi(e) {
             </div>
             <div style="flex-basis: 50%; text-align: right;">
                 <span style="display: block; font-size: 0.9em; color: #6b7280;">Yogyakarta, ${receiptDate}</span>
-                <img src="images/tanda-tangan.PNG" alt="Tanda Tangan" style="width: 30px; height: auto; margin: 10px 0 5px auto; display: block;">
+                <img src="images/tanda-tangan.png" alt="Tanda Tangan" style="width: 30px; height: auto; margin: 10px 0 5px auto; display: block;">
                 <span style="display: block; font-size: 0.9em; font-weight: 600; color: #1f2937;">(Susantoro)</span>
             </div>
         </div>

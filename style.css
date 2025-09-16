@@ -1525,14 +1525,108 @@ body {
     gap: 15px;
 }
 
-.view-ktp-btn {
+/* GAYA FINAL: TOMBOL BIRU SOLID */
+.view-id-btn {
+    /* Tampilan Dasar */
+    background-color: var(--accent-color);
+    border: 1px solid var(--accent-color);
+    color: white; /* Warna teks putih */
+    text-decoration: none;
+    
+    /* Ukuran & Bentuk */
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 0.75em;
     font-weight: 600;
-    color: var(--primary-color);
-    text-decoration: underline;
+    
+    /* Interaksi */
     cursor: pointer;
-    transition: color 0.2s ease;
+    transition: all 0.2s ease-in-out;
 }
 
-.view-ktp-btn:hover {
-    color: var(--accent-color);
+/* Efek saat kursor di atas tombol (dan tidak disabled) */
+.view-id-btn:hover:not(:disabled) {
+    background-color: #64b5f6; /* Warna biru lebih muda saat hover */
+    border-color: #64b5f6;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(66, 165, 245, 0.3);
 }
+
+/* Gaya untuk tombol yang nonaktif (disabled) */
+.view-id-btn[disabled] {
+    background-color: #ccc !important;
+    border-color: #ccc !important;
+    color: #888 !important;
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+/* Pastikan tidak ada perubahan saat diklik */
+.view-id-btn:active {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    transform: none;
+    box-shadow: none;
+}
+
+.upload-file-text {
+    color: var(--accent-color); /* Menggunakan warna biru dari variabel tema */
+    font-weight: 600; /* Opsional: membuat teks sedikit lebih tebal agar lebih menonjol */
+    font-size: 0.9em; /* Opsional: menyesuaikan ukuran font jika diperlukan */
+}
+
+/* =========================================== */
+/* GAYA KUSTOM UNTUK TOMBOL UPLOAD */
+/* =========================================== */
+.custom-file-upload-container {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #f8f8f8;
+    overflow: hidden;
+    padding: 5px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.custom-file-btn {
+    background-color: #e0e0e0;
+    color: #666;
+    font-weight: 600;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    white-space: nowrap;
+}
+
+.custom-file-btn:hover {
+    background-color: #d4d4d4;
+}
+
+.custom-file-text {
+    flex-grow: 1;
+    padding: 0 10px;
+    font-size: 1em;
+    color: #888;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.custom-file-btn {
+    background-color: blue;
+    color: white;
+    font-weight: 600;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
