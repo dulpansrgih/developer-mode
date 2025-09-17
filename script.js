@@ -222,9 +222,6 @@ document.body.addEventListener('click', (e) => {
     else if (target.closest('#preview-kuitansi-btn')) {
         handlePreviewKuitansi();
     }
-    else if (target.closest('#share-kuitansi-btn')) {
-        handleShareKuitansi();
-    }
     else if (target.closest('#booking-cancel-btn')) {
         document.getElementById('booking-modal-backdrop').classList.remove('show');
     }
@@ -2619,7 +2616,7 @@ function showKwitansiOptionsModal(data) {
             <div class="form-group">
                 <label for="modal-start-month">Pembayaran sewa untuk:</label>
                 <select id="modal-start-month" required>
-                    <option value="">Pilih...</option>
+                    <option value="">Pilih Bulan</option>
                     <option value="Januari">Januari</option>
                     <option value="Februari">Februari</option>
                     <option value="Maret">Maret</option>
@@ -2634,13 +2631,13 @@ function showKwitansiOptionsModal(data) {
                     <option value="Desember">Desember</option>
                 </select>
                 <select id="modal-end-month">
-                    <option value="">Bulan Akhir</option>
+                    <option value="">Pilih Bulan</option>
                     <option value="Januari">Januari</option>
                     <option value="Februari">Februari</option>
                     <option value="Maret">Maret</option>
                     <option value="April">April</option>
                     <option value="Mei">Mei</option>
-                    <option value="Juni">Juni</option>
+                    <option value="Juni">Juni</p>
                     <option value="Juli">Juli</option>
                     <option value="Agustus">Agustus</option>
                     <option value="September">September</option>
@@ -2698,6 +2695,7 @@ function showKwitansiOptionsModal(data) {
         generateBtn.disabled = true;
         generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
         
+        // --- PERBAIKAN PENTING: data.whatsapp DITERUSKAN DENGAN BENAR ---
         handleGenerateKuitansi({
             nama: data.nama,
             kamar: data.kamar,
@@ -2707,6 +2705,7 @@ function showKwitansiOptionsModal(data) {
             endMonth: endMonthName,
             whatsapp: data.whatsapp
         });
+        // --- AKHIR PERBAIKAN ---
 
         modalBackdrop.classList.remove('show');
         setTimeout(() => modalBackdrop.classList.add('hidden'), 300);
@@ -2762,11 +2761,9 @@ function handleShareKuitansi() {
         showCustomAlert('Tidak ada kuitansi untuk dibagikan. Buat kuitansi terlebih dahulu.');
         return;
     }
-
     const namaPenghuni = generatedReceiptData.namaPenghuni;
-    const shareText = `Halo ${namaPenghuni}, ini adalah kuitansi pembayaran sewa kost Anda.`;
-
-    // Unduh gambar kuitansi secara otomatis
+    
+    // Logika unduh file tetap di sini agar kuitansi diunduh sebelum peringatan muncul
     const link = document.createElement('a');
     link.href = generatedReceiptData.imageData;
     link.download = `kwitansi_${namaPenghuni.replace(/\s+/g, '_')}.png`;
@@ -2775,9 +2772,8 @@ function handleShareKuitansi() {
     link.click();
     document.body.removeChild(link);
 
-    // Buka WhatsApp dengan pesan teks
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
-    window.open(whatsappUrl, '_blank');
+    // HANYA memanggil fungsi peringatan
+    showShareAlert(namaPenghuni, generatedReceiptData.whatsapp);
 }
 
 
@@ -2872,14 +2868,13 @@ async function handleGenerateKuitansi(data) {
 
         const canvas = await html2canvas(tempDiv.querySelector('#receipt-card-render'), { scale: 4 });
         
-        // --- INI PERBAIKAN PENTING ---
         // Simpan URL gambar kuitansi ke variabel global
         generatedReceiptData = {
             imageData: canvas.toDataURL('image/png'),
             namaPenghuni: data.nama,
+            whatsapp: data.whatsapp // Tambahkan baris ini
         };
-        // --- AKHIR PERBAIKAN PENTING ---
-                
+
         contentArea.innerHTML = `
         <div class="receipt-success-card">
             <div class="status-icon-circle">

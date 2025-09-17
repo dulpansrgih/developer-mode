@@ -128,3 +128,38 @@ function handleFiles(files) {
         fileNameDisplay.textContent = 'Belum ada file dipilih';
     }
 }
+
+
+/**
+ * Menampilkan pop-up peringatan sebelum membuka WhatsApp.
+ * @param {string} nama - Nama penghuni yang akan dibagikan.
+ * @param {string} whatsappNumber - Nomor WhatsApp penghuni.
+ */
+function showShareAlert(nama, whatsappNumber) {
+    if (!whatsappNumber || whatsappNumber.trim() === '') {
+        showCustomAlert('Nomor WhatsApp untuk penghuni ini tidak tersedia.');
+        return;
+    }
+    const cleanNumber = whatsappNumber.replace(/[^0-9]/g, '');
+    const customAlert = document.getElementById('custom-alert-backdrop');
+    customAlert.innerHTML = `
+        <div class="alert-content">
+            <h4 class="alert-title">Perhatian!</h4>
+            <p class="alert-message">
+                Gambar tidak otomatis terkirim ke Chat WhatsApp, pastikan telah mengunduh kuitansi.
+            </p>
+            <div class="alert-actions">
+                <button id="alert-continue-btn" class="form-btn">Lanjut</button>
+            </div>
+        </div>
+    `;
+    customAlert.classList.remove('hidden');
+    customAlert.classList.add('show');
+    const continueBtn = document.getElementById('alert-continue-btn');
+    continueBtn.addEventListener('click', () => {
+        const whatsappUrl = `https://wa.me/${cleanNumber}`;
+        window.open(whatsappUrl, '_blank');
+        customAlert.classList.remove('show');
+        setTimeout(() => customAlert.classList.add('hidden'), 300);
+    });
+}
