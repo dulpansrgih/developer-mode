@@ -417,50 +417,64 @@ function formatDateToYyyyMmDd(dateString) {
  * @param {HTMLElement} button - Tombol reminder yang diklik.
  */
 function handleReminderClick(button) {
-    const { nama, kamar, nominal, jatuhTempo, whatsapp } = button.dataset;
+    const { nama, kamar, nominal, jatuhTempo, whatsapp, type } = button.dataset;
 
     if (!whatsapp || whatsapp === '-') {
         showCustomAlert('Nomor WhatsApp untuk penghuni ini tidak tersedia.');
         return;
     }
 
-    let cleanWhatsapp = whatsapp.replace(/[^0-9]/g, ''); // Hapus semua karakter non-angka
-    if (cleanWhatsapp.startsWith('0')) {
-        cleanWhatsapp = '62' + cleanWhatsapp.substring(1); // Ganti '0' pertama dengan '62'
+    let cleanWhatsapp = whatsapp.replace(/[^0-9]/g, '');
+    if (!cleanWhatsapp.startsWith('62')) {
+        if (cleanWhatsapp.startsWith('0')) {
+            cleanWhatsapp = '62' + cleanWhatsapp.substring(1);
+        } else {
+            // Ini akan menangani kasus seperti '+8...'
+            cleanWhatsapp = '62' + cleanWhatsapp;
+        }
     }
-
+    
+    let message;
     const formattedNominal = formatRupiah(nominal);
-    const formattedJatuhTempo = formatDate(jatuhTempo);
-    const hariJatuhTempo = getIndonesianDayOfWeek(jatuhTempo);
 
-    const message = `
+    if (type === 'listrik') {
+        // --- TEMPLATE PESAN KHUSUS UNTUK IURAN LISTRIK ---
+        message = `
+*PEMBERITAHUAN TAGIHAN IURAN LISTRIK*
+_______________________________
+Yth. Sdr. ${nama} (Penghuni Kamar ${kamar})
+Tagihan iuran listrik Saudara adalah sebesar Rp. ${formattedNominal}.
+Mohon untuk dapat melakukan pembayaran secepatnya.
+Terima kasih.
+        `.trim();
+    } else {
+        // --- TEMPLATE PESAN UMUM UNTUK SEWA KAMAR ---
+        const formattedJatuhTempo = formatDate(jatuhTempo);
+        const hariJatuhTempo = getIndonesianDayOfWeek(jatuhTempo);
+
+        message = `
 *PEMBERITAHUAN JATUH TEMPO PEMBAYARAN SEWA KAMAR*
 _______________________________
 Dengan hormat,
 Yth. Sdr. ${nama} (Penghuni Kamar ${kamar})
-
 Melalui pesan ini, kami ingin mengingatkan bahwa pembayaran sewa kamar Saudara akan jatuh tempo pada:
 **${hariJatuhTempo}, ${formattedJatuhTempo}**
-
 Adapun rincian tagihan Saudara adalah sebesar Rp. ${formattedNominal}/bulan. Mohon untuk dapat melakukan pembayaran sesuai kesepakatan.
-
 Pembayaran dapat dilakukan melalui transfer ke salah satu rekening berikut:
 1) BCA : 2350332203 (Drs. Susantoro)
 2) BRI : 684801000938500 (SUSANTORO)
 3) Bank Jateng : 2161023356 (Susantoro)
 4) BNI : 0211447416 (SRI YANIARI)
 5) Mandiri : 1850004105075 (SUSANTORO)
-
 _Jika Saudara sudah melakukan pembayaran, mohon abaikan pesan ini_.
 > _sent via portal-kos.dulpanadisaragih.my.id/#reminder_
-
 Atas perhatian dan kerjasamanya, kami ucapkan terima kasih.
-
 Hormat kami,
 Pengelola Kost Putra Bu Yani
-    `.trim();
+        `.trim();
+    }
 
-    const whatsappUrl = `https://wa.me/${whatsapp}?text=${encodeURIComponent(message)}`;
+    const whatsappUrl = `https://wa.me/${cleanWhatsapp}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
 }
 
@@ -820,24 +834,19 @@ function renderDatabaseForm(contentArea, data) {
  * Menangani proses pengiriman data form ke Google Apps Script.
  */
 async function handleFormSubmit(eventOrData, isEmptying = false, buttonEl = null) {
-    // Mencegah event default jika berasal dari form submit
     if (eventOrData && eventOrData.target) {
         eventOrData.preventDefault();
     }
-
     let originalButtonText = buttonEl ? buttonEl.innerHTML : 'Simpan Perubahan';
     if (buttonEl) {
         buttonEl.disabled = true;
         buttonEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
     }
-
     try {
         const dataToSend = { action: 'update', sheet: 'penghuni' };
         let residentData;
-
         if (isEmptying) {
-            // Logika untuk mengosongkan kamar
-            residentData = databaseData.penghuni.find(p => p.kamar === eventOrData.kamar);
+            // --- BLOK PENGOSONGAN DATA YANG SUDAH DIPERBAIKI ---
             dataToSend.kamar = eventOrData.kamar;
             dataToSend.nama = '';
             dataToSend.nik = '';
@@ -850,12 +859,13 @@ async function handleFormSubmit(eventOrData, isEmptying = false, buttonEl = null
             dataToSend.statusKamar = 'Tersedia';
             dataToSend.nominal = '0';
             dataToSend.bayarTerakhir = '';
+            dataToSend.iuranListrik = '0';
+            dataToSend.statusTagihan = '';
+            dataToSend.jumlahBulan = '0';
+            // --- AKHIR BLOK PERBAIKAN ---
         } else {
-            // Logika untuk mengisi data penghuni dari form
             const form = eventOrData.target;
             residentData = databaseData.penghuni.find(p => p.kamar === form.querySelector('[name="kamar"]').value);
-
-            // Ambil semua data dari form
             dataToSend.kamar = form.querySelector('[name="kamar"]').value;
             dataToSend.nama = form.querySelector('[name="nama"]').value;
             dataToSend.nik = form.querySelector('[name="nik"]').value;
@@ -866,43 +876,34 @@ async function handleFormSubmit(eventOrData, isEmptying = false, buttonEl = null
             dataToSend.jatuhTempo = form.querySelector('[name="jatuhTempo"]').value;
             dataToSend.nominal = form.querySelector('[name="nominal"]').value;
             dataToSend.statusKamar = form.querySelector('[name="statusKamar"]').value;
-            // Penting: Gunakan data.bayarTerakhir dari residentData jika tidak ada perubahan
             dataToSend.bayarTerakhir = residentData.bayarTerakhir || '';
+            // Pastikan data iuran listrik juga terkirim
+            dataToSend.iuranListrik = residentData.iuranListrik || '';
+            dataToSend.statusTagihan = residentData.statusTagihan || '';
+            dataToSend.jumlahBulan = residentData.jumlahBulan || '';
         }
-
-        // --- LOKASI LOGIKA PEMBAYARAN TERAKHIR YANG BENAR ---
-        // Logika ini akan dijalankan setelah semua data dari form atau pengosongan terkumpul
         if (!isEmptying && residentData && dataToSend.statusKamar === 'Tidak Tersedia') {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-
             const jatuhTempoString = dataToSend.jatuhTempo;
             const parts = jatuhTempoString.split('-');
             const jatuhTempoDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-
             if (jatuhTempoDate >= today) {
                 dataToSend.bayarTerakhir = new Date().toISOString().split('T')[0];
             } else {
                 dataToSend.bayarTerakhir = residentData.bayarTerakhir || '';
             }
         }
-        // --- AKHIR LOGIKA PEMBAYARAN TERAKHIR ---
-                
-        // Kirim data ke API
         const response = await fetch(API_URL, {
             method: 'POST',
             body: new URLSearchParams(dataToSend),
         });
-
         const result = await response.json();
         if (!result.success) {
             throw new Error(result.message || 'Terjadi kesalahan di server.');
         }
-        
         showCustomAlert(result.message || 'Data berhasil disimpan!');
-        // Panggil kembali fungsi untuk me-render database agar data ter-update
         renderDatabaseContent(document.getElementById('content-area'));
-
     } catch (error) {
         console.error('Error saat mengirim form:', error);
         showCustomAlert(`Gagal menyimpan data: ${error.message}`);
@@ -1171,18 +1172,22 @@ async function renderDatabaseContent(contentArea) {
                     }
                 }
                 
-                // >>> LOGIKA TAGIHAN LISTRIK <<<<<
+                // >>> LOGIKA TAGIHAN LISTRIK DENGAN PERBAIKAN <<<
                 const iuranListrik = parseInt(data.iuranListrik) || 0;
-                let totalTagihan = parseInt(data.nominal) || 0;
-                const statusTagihan = data.statusTagihan || 'Tidak Ada';
+                let totalTagihanListrik = 0;
+                const statusTagihan = data.statusTagihan || 'Belum Bayar';
                 
+                if (statusTagihan === 'Belum Bayar') {
+                    totalTagihanListrik = iuranListrik;
+                } else if (statusTagihan === 'Menunggak') {
+                    totalTagihanListrik = iuranListrik * (parseInt(data.jumlahBulan) || 0);
+                }
+
                 let tagihanListrikHtml = '';
                 if (statusTagihan === 'Lunas') {
                     tagihanListrikHtml = `<span class="database-value status-lunas">Rp ${formatRupiah(0)}</span>`;
-                } else if (statusTagihan === 'Menunggak') {
-                    tagihanListrikHtml = `<span class="database-value status-menunggak">Rp ${formatRupiah(totalTagihan)}</span>`;
-                } else if (statusTagihan === 'Belum Bayar') {
-                    tagihanListrikHtml = `<span class="database-value status-menunggak">Rp ${formatRupiah(totalTagihan)}</span>`;
+                } else if (statusTagihan === 'Menunggak' || statusTagihan === 'Belum Bayar') {
+                    tagihanListrikHtml = `<span class="database-value status-menunggak">Rp ${formatRupiah(totalTagihanListrik)}</span>`;
                 }
                 
                 let jumlahBulanHtml = '';
@@ -1676,11 +1681,11 @@ async function renderFilteredElectricityBills(contentArea, filterKey) {
                             </div>`;
                     }
                     
-                    // PENAMBAHAN LOGIKA: Buat tombol edit hanya jika kamar bukan A1
                     let editButtonHtml = '';
                     if (data.kamar !== 'A1') {
                         editButtonHtml = `
                             <div class="card-actions">
+                                <button class="form-btn reminder-btn" data-type="listrik" data-nama="${data.nama}" data-kamar="${data.kamar}" data-nominal="${totalTagihan}" data-whatsapp="${data.whatsapp || ''}"><i class="fas fa-bell"></i> Reminder</button>
                                 <button class="form-btn edit-btn" data-kamar="${data.kamar}"><i class="fas fa-edit"></i> Edit</button>
                             </div>`;
                     }
@@ -1712,90 +1717,192 @@ async function renderFilteredElectricityBills(contentArea, filterKey) {
                 }
             });
         });
+        
+        // Listener baru untuk tombol reminder
+        contentArea.querySelectorAll('.reminder-btn').forEach(button => {
+             button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                handleReminderClick(e.currentTarget);
+            });
+        });
 
     } catch (error) {
         contentArea.innerHTML = `<p style="text-align: center; color: var(--light-text-color);">Gagal memuat data. ${error.message}</p>`;
     }
 }
 
-function renderElectricityBillForm(contentArea, data) {
-    const isMenunggak = data.statusTagihan === 'Menunggak';
-    const initialBulan = isMenunggak ? (data.jumlahBulan > 1 ? data.jumlahBulan : 2) : (data.jumlahBulan || 1);
-
-    contentArea.innerHTML = `
-        <div class="database-form-container">
-            <form id="edit-electricity-bill-form" class="database-form">
-                <h4>Edit Iuran Kamar ${data.kamar}</h4>
-                <input type="hidden" id="electricity-bill-form-kamar" name="kamar" value="${data.kamar}">
-                <label for="iuranListrik">Iuran Listrik:</label>
-                <input type="text" id="iuranListrik" name="iuranListrik" value="${data.iuranListrik || ''}" required>
-                <label for="statusTagihan">Status Tagihan:</label>
-                <select id="statusTagihan" name="statusTagihan">
-                    <option value="Lunas" ${data.statusTagihan === 'Lunas' ? 'selected' : ''}>Lunas</option>
-                    <option value="Belum Bayar" ${data.statusTagihan === 'Belum Bayar' ? 'selected' : ''}>Belum Bayar</option>
-                    <option value="Menunggak" ${isMenunggak ? 'selected' : ''}>Menunggak</option>
-                </select>
-                <div id="bulan-container" style="display: ${isMenunggak ? 'block' : 'none'};">
-                    <label for="jumlahBulan">Jumlah Bulan:</label>
-                    <input type="number" id="jumlahBulan" name="jumlahBulan" min="1" value="${initialBulan}">
-                    <small id="bulan-warning" style="color: #e74c3c; font-size: 0.8em; display: ${isMenunggak ? 'block' : 'none'}; margin-top: 5px;">
-                        Minimal 2 bulan untuk status menunggak.
-                    </small>
-                </div>
-                <input type="hidden" id="total-tagihan-hidden" name="nominal">
-
-                <div class="form-actions">
-                    <button type="submit" class="form-btn">Simpan</button>
-                    <button type="button" id="cancel-edit-bill" class="form-btn cancel">Batal</button>
-                </div>
-            </form>
-        </div>
-    `;
-
-    const statusSelect = document.getElementById('statusTagihan');
-    const bulanContainer = document.getElementById('bulan-container');
-    const iuranInput = document.getElementById('iuranListrik');
-    const bulanInput = document.getElementById('jumlahBulan');
-    const nominalHiddenInput = document.getElementById('total-tagihan-hidden');
-    const bulanWarning = document.getElementById('bulan-warning');
-
-    const updateTotal = () => {
-        const iuran = parseInt(iuranInput.value.replace(/\./g, '')) || 0;
-        const status = statusSelect.value;
-
-        if (status === 'Menunggak') {
-            bulanContainer.style.display = 'block';
-            bulanWarning.style.display = 'block';
-            bulanInput.min = '2';
-            if (parseInt(bulanInput.value) < 2) {
-                bulanInput.value = '2';
-            }
-            const bulan = parseInt(bulanInput.value) || 2;
-            nominalHiddenInput.value = iuran * bulan;
-        } else if (status === 'Belum Bayar') {
-            bulanContainer.style.display = 'none';
-            bulanWarning.style.display = 'none';
-            bulanInput.min = '1';
-            bulanInput.value = 1;
-            nominalHiddenInput.value = iuran;
-        } else { // Lunas
-            bulanContainer.style.display = 'none';
-            bulanWarning.style.display = 'none';
-            bulanInput.min = '0'; // <-- INI PERBAIKANNYA
-            bulanInput.value = 0;
-            nominalHiddenInput.value = 0;
-        }
-    };
-
-    updateTotal();
-
-    statusSelect.addEventListener('change', updateTotal);
-    iuranInput.addEventListener('input', updateTotal);
-    bulanInput.addEventListener('input', updateTotal);
+// GANTI SELURUH FUNGSI renderDatabaseContent ANDA DENGAN INI
+async function renderDatabaseContent(contentArea) {
+    contentArea.innerHTML = getProgressLoaderHtml('Memuat Database Admin....');
     
-    document.getElementById('cancel-edit-bill').addEventListener('click', () => {
-        displayContent('tagihan-listrik');
-    });
+    const bar = document.getElementById('progress-bar-inner');
+    const percentageText = document.getElementById('progress-percentage');
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += Math.floor(Math.random() * 10) + 5;
+        if (progress >= 95) {
+            progress = 95;
+            clearInterval(interval);
+        }
+        if(bar) bar.style.width = progress + '%';
+        if(percentageText) percentageText.textContent = progress + '%';
+    }, 150);
+
+    try {
+        const response = await fetch(`${API_URL}?action=read`);
+        const result = await response.json();
+        if (!result.success || !result.data || !result.data.penghuni) {
+            throw new Error(result.message || 'Gagal mengambil data dari server');
+        }
+        databaseData.penghuni = result.data.penghuni;
+
+        let html = `
+            <div class="database-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h3 style="color: var(--primary-color); margin: 0;">Database Penghuni Kost</h3>
+                <div>
+                    <button id="susantoro-draft-btn" class="form-btn draft-btn" data-page="susantoro-draft-menu"><i class="fas fa-user-circle"></i> Draft Susantoro</button>
+                    <button id="refresh-data-btn" class="form-btn refresh-btn"><i class="fas fa-sync-alt"></i> Refresh</button>
+                </div>
+            </div>`;
+
+        databaseData.penghuni.forEach(data => {
+            const isOwnerRoom = data.kamar === 'A1';
+            const isAvailable = data.statusKamar === 'Tersedia';
+            let cardClass = isOwnerRoom ? 'owner-room' : (isAvailable ? 'available-room' : '');
+
+            if (isOwnerRoom) {
+                // Tampilan Kartu Pemilik (A1)
+                html += `
+                    <div class="database-card ${cardClass}" data-kamar="${data.kamar}">
+                        <h4>Kamar ${data.kamar} - ${data.nama}</h4>
+                        <div class="database-detail-item"><span>No. WhatsApp</span><span class="database-value" style="color: var(--accent-color); font-weight: 600;">Terkonfirmasi!</span></div>
+                        <div class="database-detail-item"><span>Status Pembayaran</span><span class="database-value status-lunas"><i class="fas fa-check-circle"></i> Lunas</span></div>
+                        <div class="database-detail-item"><span>Status Kamar</span><span class="database-value status-menunggak"><i class="fas fa-times-circle"></i> Tidak Disewakan!</span></div>
+                    </div>`;
+            } 
+            else if (isAvailable) {
+                // Tampilan ringkas untuk kamar KOSONG
+                html += `
+                    <div class="database-card ${cardClass}" data-kamar="${data.kamar}">
+                        <h4>Kamar ${data.kamar} - <i>Kosong</i></h4>
+                        <div class="database-detail-item">
+                            <span>Status Pembayaran</span>
+                            <span class="database-value" style="color: #f39c12; font-size: 1.2em;" title="Tidak berlaku untuk kamar kosong">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </span>
+                        </div>
+                        <div class="database-detail-item">
+                            <span>Status Kamar</span>
+                            <span class="database-value status-tersedia"><i class="fas fa-check-circle"></i> ${data.statusKamar}</span>
+                        </div>
+                        <div class="card-actions">
+                            <button class="form-btn edit-btn" data-kamar="${data.kamar}"><i class="fas fa-edit"></i> Edit</button>
+                        </div>
+                    </div>`;
+            } else {
+                // Tampilan untuk kamar yang DIHUNI dengan TATA LETAK BARU
+                
+                // >>> LOGIKA STATUS PEMBAYARAN SEWA <<<<<
+                let statusSewa = 'Lunas';
+                let statusSewaClass = 'status-lunas';
+                let statusSewaIcon = 'fas fa-check-circle';
+
+                if (data.jatuhTempo && typeof data.jatuhTempo === 'string') {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const parts = data.jatuhTempo.split('-');
+                    const jatuhTempo = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                    if (jatuhTempo < today) {
+                        statusSewa = 'Belum Bayar';
+                        statusSewaClass = 'status-menunggak';
+                        statusSewaIcon = 'fas fa-exclamation-triangle';
+                    }
+                }
+                
+                // >>> LOGIKA TAGIHAN LISTRIK DENGAN PERBAIKAN <<<
+                const iuranListrik = parseInt(data.iuranListrik) || 0;
+                let totalTagihanListrik = 0;
+                const statusTagihan = data.statusTagihan || 'Belum Bayar';
+                
+                if (statusTagihan === 'Belum Bayar') {
+                    totalTagihanListrik = iuranListrik;
+                } else if (statusTagihan === 'Menunggak') {
+                    totalTagihanListrik = iuranListrik * (parseInt(data.jumlahBulan) || 0);
+                }
+
+                let tagihanListrikHtml = '';
+                if (statusTagihan === 'Lunas') {
+                    tagihanListrikHtml = `<span class="database-value status-lunas">Rp ${formatRupiah(0)}</span>`;
+                } else if (statusTagihan === 'Menunggak' || statusTagihan === 'Belum Bayar') {
+                    tagihanListrikHtml = `<span class="database-value status-menunggak">Rp ${formatRupiah(totalTagihanListrik)}</span>`;
+                }
+                
+                let jumlahBulanHtml = '';
+                if (statusTagihan === 'Menunggak' && data.jumlahBulan > 0) {
+                    jumlahBulanHtml = `
+                        <div class="database-detail-item">
+                            <span>Jumlah Bulan</span>
+                            <span class="database-value" style="color: #e74c3c;">${data.jumlahBulan} bulan</span>
+                        </div>`;
+                }
+
+                const statusTagihanIcon = (statusTagihan === 'Lunas') ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle';
+                const statusTagihanClass = (statusTagihan === 'Lunas') ? 'status-lunas' : 'status-menunggak';
+
+
+                const canViewId = data.FileLink && data.nik;
+                const viewIdHtml = canViewId 
+                    ? `<button class="view-id-btn" data-url="${data.FileLink}">Lihat</button>` 
+                    : `<button class="view-id-btn disabled-btn" disabled>Lihat</button>`;
+                
+                html += `
+                    <div class="database-card ${cardClass}" data-kamar="${data.kamar}">
+                        <h4 style="line-height: 1.3; margin-bottom: 20px;">
+                            Kamar ${data.kamar} - ${data.nama}<br>
+                            <span style="font-weight: normal; font-size: 0.9em;">NIK: ${data.nik || '-'}</span>
+                        </h4>
+                        
+                        <div class="database-detail-item"><span>ID KTP/SIM <span class="upload-file-text">(Upload File)</span></span><span class="database-value">${viewIdHtml}</span></div>
+                        <div class="database-detail-item"><span>No. WhatsApp</span><span class="database-value whatsapp-number">${data.whatsapp || '-'}</span></div>
+                        <div class="database-detail-item"><span>Tempat, Tanggal Lahir</span><span class="database-value">${data.ttl || '-'}</span></div>
+                        <div class="database-detail-item"><span>Alamat</span><span class="database-value">${data.alamat || '-'}</span></div>
+                        <div class="database-detail-item"><span>Status</span><span class="database-value">${data.status || '-'}</span></div>
+
+                        <hr style="border: none; height: 1px; background-image: linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,0.1), rgba(0,0,0,0)); margin: 15px 0;">
+
+                        <div class="database-detail-item"><span>Jumlah Pembayaran</span><span class="database-value">Rp ${formatRupiah(data.nominal || '0')}</span></div>
+                        <div class="database-detail-item"><span>Status Pembayaran</span><span class="database-value ${statusSewaClass}"><i class="${statusSewaIcon}"></i> ${statusSewa}</span></div>
+                        <div class="database-detail-item"><span>Jatuh Tempo</span><span class="database-value">${formatDate(data.jatuhTempo)}</span></div>
+                        <div class="database-detail-item"><span>Pembayaran Terakhir</span><span class="database-value" style="color: #f39c12;">${formatDate(data.bayarTerakhir)}</span></div>
+                        <hr style="border: none; height: 1px; background-image: linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,0.1), rgba(0,0,0,0)); margin: 15px 0;">
+
+                        <div class="database-detail-item"><span>Tagihan Listrik</span><span class="database-value">${tagihanListrikHtml}</span></div>
+                        <div class="database-detail-item"><span>Status Tagihan</span><span class="database-value ${statusTagihanClass}"><i class="${statusTagihanIcon}"></i> ${statusTagihan}</span></div>
+                        ${jumlahBulanHtml}
+
+                        <div class="database-detail-item"><span>Status Kamar</span><span class="database-value status-tidak-tersedia"><i class="fas fa-times-circle"></i> ${data.statusKamar}</span></div>
+                        
+                        <div class="card-actions">
+                            <button class="form-btn generate-btn" data-nama="${data.nama}" data-kamar="${data.kamar}" data-nominal="${data.nominal}" data-jatuh-tempo="${data.jatuhTempo}" data-whatsapp="${data.whatsapp || ''}"><i class="fas fa-receipt"></i> e-Kwitansi</button>
+                            <button class="form-btn reminder-btn" data-nama="${data.nama}" data-kamar="${data.kamar}" data-nominal="${data.nominal}" data-jatuh-tempo="${data.jatuhTempo}" data-whatsapp="${data.whatsapp || ''}"><i class="fas fa-bell"></i></button>
+                            <button class="form-btn edit-btn" data-kamar="${data.kamar}"><i class="fas fa-edit"></i> Edit</button>
+                        </div>
+                    </div>`;
+            }
+        });
+        
+        clearInterval(interval);
+        if(bar) bar.style.width = '100%';
+        if(percentageText) percentageText.textContent = '100%';
+        
+        setTimeout(() => {
+            contentArea.innerHTML = html;
+        }, 300);
+
+    } catch (error) {
+        clearInterval(interval);
+        contentArea.innerHTML = `<div class="error-message">Gagal memuat data. Silakan coba lagi. <br><small>${error.message}</small></div>`;
+    }
 }
 
 async function handleElectricityBillFormSubmit(e) {
