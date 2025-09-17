@@ -2864,12 +2864,8 @@ async function handleGenerateKuitansi(data) {
         // Setelah semua gambar dimuat, panggil html2canvas
         const canvas = await html2canvas(tempDiv.querySelector('#receipt-card-render'), { scale: 2 });
         
-        generatedReceiptData = {
-            imageData: canvas.toDataURL('image/png'),
-            namaPenghuni: data.nama,
-            // Anda juga bisa menyimpan data lain yang relevan di sini
-        };
-                
+        generatedReceiptData = canvas.toDataURL('image/png');
+    
         // Tampilkan halaman dengan tombol preview dan share
         contentArea.innerHTML = `
             <div style="
