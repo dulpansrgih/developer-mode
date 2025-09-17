@@ -195,31 +195,6 @@ document.body.addEventListener('click', (e) => {
         showKwitansiOptionsModal(data);
     }
 
-        else if (target.closest('#modal-generate-kuitansi-btn')) {
-        const button = target.closest('#modal-generate-kuitansi-btn');
-        const data = {
-            nama: button.dataset.nama,
-            kamar: button.dataset.kamar,
-            nominal: button.dataset.nominal,
-            whatsapp: button.dataset.whatsapp,
-            startMonth: document.getElementById('modal-start-month').value,
-            endMonth: document.getElementById('modal-end-month').value,
-        };
-
-        if (!data.startMonth) {
-            showCustomAlert('Bulan awal pembayaran wajib diisi.');
-            return;
-        }
-
-        handleGenerateKuitansi(data);
-        
-        const modalBackdrop = document.getElementById('kwitansi-options-modal-backdrop');
-        if (modalBackdrop) {
-            modalBackdrop.classList.remove('show');
-            setTimeout(() => modalBackdrop.classList.add('hidden'), 300);
-        }
-    }
-
     else if (target.closest('.reminder-btn')) {
         handleReminderClick(target.closest('.reminder-btn'));
     }
@@ -2644,7 +2619,7 @@ function showKwitansiOptionsModal(data) {
             <div class="form-group">
                 <label for="modal-start-month">Pembayaran sewa untuk:</label>
                 <select id="modal-start-month" required>
-                    <option value="">Bulan Mulai</option>
+                    <option value="">Pilih...</option>
                     <option value="Januari">Januari</option>
                     <option value="Februari">Februari</option>
                     <option value="Maret">Maret</option>
@@ -2685,43 +2660,58 @@ function showKwitansiOptionsModal(data) {
     modalBackdrop.classList.remove('hidden');
     modalBackdrop.classList.add('show');
 
-    // Tambahkan event listener untuk tombol 'close'
-    const closeBtn = modalContent.querySelector('.modal-close-btn');
+    const closeBtn = modalContent.querySelector('.kwitansi-close-btn');
     if (closeBtn) {
         closeBtn.addEventListener('click', () => {
-            handleCloseModal({ target: modalBackdrop });
+            modalBackdrop.classList.remove('show');
+            setTimeout(() => modalBackdrop.classList.add('hidden'), 300);
         });
     }
     
-    // Tambahkan event listener untuk tombol 'Buat Kuitansi'
     const generateBtn = document.getElementById('modal-generate-kuitansi-btn');
     generateBtn.addEventListener('click', () => {
-        const startMonth = document.getElementById('modal-start-month').value;
-        const endMonth = document.getElementById('modal-end-month').value;
-        
-        if (!startMonth) {
+        const startMonthName = document.getElementById('modal-start-month').value;
+        const endMonthName = document.getElementById('modal-end-month').value;
+        const nominalPerMonth = parseInt(data.nominal);
+
+        if (!startMonthName) {
             showCustomAlert('Bulan awal pembayaran wajib diisi.');
             return;
         }
 
-        // Tampilkan animasi loading pada tombol
+        const months = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+        const startMonthIndex = months.indexOf(startMonthName);
+        const endMonthIndex = months.indexOf(endMonthName);
+        
+        let totalMonths = 1;
+        let totalNominal = nominalPerMonth;
+
+        if (endMonthName && endMonthIndex > 0) {
+            if (endMonthIndex >= startMonthIndex) {
+                totalMonths = endMonthIndex - startMonthIndex + 1;
+            } else {
+                totalMonths = (12 - startMonthIndex) + endMonthIndex + 1;
+            }
+            totalNominal = nominalPerMonth * totalMonths;
+        }
+
         generateBtn.disabled = true;
         generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
         
         handleGenerateKuitansi({
             nama: data.nama,
             kamar: data.kamar,
-            nominal: data.nominal,
-            startMonth: startMonth,
-            endMonth: endMonth,
+            nominal: totalNominal,
+            totalMonths: totalMonths,
+            startMonth: startMonthName,
+            endMonth: endMonthName,
             whatsapp: data.whatsapp
         });
 
-        // Tutup modal setelah pemanggilan fungsi
-        handleCloseModal({ target: modalBackdrop });
+        modalBackdrop.classList.remove('show');
+        setTimeout(() => modalBackdrop.classList.add('hidden'), 300);
     });
     
-    // Logika catatan satu bulan
     const startMonthSelect = document.getElementById('modal-start-month');
     const endMonthSelect = document.getElementById('modal-end-month');
     const singleMonthNote = document.getElementById('modal-single-month-note');
@@ -2738,13 +2728,35 @@ function showKwitansiOptionsModal(data) {
 }
 
 function handlePreviewKuitansi() {
-    if (!generatedReceiptData) {
+    if (!generatedReceiptData || !generatedReceiptData.imageData) {
         showCustomAlert('Tidak ada kuitansi untuk ditampilkan. Buat kuitansi terlebih dahulu.');
         return;
     }
-    document.getElementById('receipt-preview-image').src = generatedReceiptData;
-    document.getElementById('receipt-preview-modal-backdrop').classList.remove('hidden');
-    document.getElementById('receipt-preview-modal-backdrop').classList.add('show');
+    const modal = document.getElementById('receipt-preview-modal-backdrop');
+    const image = document.getElementById('receipt-preview-image');
+
+    // Mengatur sumber gambar dari data kuitansi yang sudah disimpan
+    image.src = generatedReceiptData.imageData;
+
+    // KODE YANG PENTING: Menyesuaikan ukuran gambar agar pas di layar
+    image.style.cssText = "width: 100%; height: auto; max-width: 380px; display: block; margin: auto;";
+
+    // Menampilkan modal pratinjau
+    modal.classList.remove('hidden');
+    modal.classList.add('show');
+}
+
+function handleDownloadKuitansi() {
+    if (!generatedReceiptData || !generatedReceiptData.imageData) {
+        showCustomAlert('Tidak ada kuitansi untuk diunduh. Buat kuitansi terlebih dahulu.');
+        return;
+    }
+    const link = document.createElement('a');
+    link.href = generatedReceiptData.imageData;
+    link.download = `kwitansi_${generatedReceiptData.namaPenghuni.replace(/\s+/g, '_')}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 function handleShareKuitansi() {
@@ -2779,11 +2791,11 @@ async function handleGenerateKuitansi(data) {
     const contentArea = document.getElementById('content-area');
 
     try {
-        // PERBAIKAN: Pastikan nilai nominal adalah angka yang bersih
         const nominal = parseInt(String(data.nominal).replace(/[^0-9]/g, '')) || 0;
         const nominalInWords = numberToText(nominal);
         const nominalFormatted = formatRupiah(nominal);
         const periodeTeks = data.endMonth ? `${data.startMonth} - ${data.endMonth}` : data.startMonth;
+        const totalMonthsText = data.totalMonths > 1 ? `(${data.totalMonths} bulan)` : '';
         const receiptDate = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
         const now = new Date();
         const digitalPrintDate = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -2813,46 +2825,45 @@ async function handleGenerateKuitansi(data) {
                     </div>
                     <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #d1d5db;">
                         <span style="font-weight: 600; color: #1f2937;">Untuk Pembayaran</span>
-                        <span style="font-weight: 500; text-align: right;">Sewa Kost Kamar ${data.kamar}</span>
+                        <span style="font-weight: 500; text-align: right;">Sewa Kost Kamar ${data.kamar} ${totalMonthsText}</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #d1d5db;">
                         <span style="font-weight: 600; color: #1f2937;">Periode</span>
                         <span style="font-weight: 500; text-align: right;">${periodeTeks}</span>
                     </div>
-                    <div style="padding: 15px 0; text-align: center; font-style: italic; border-bottom: 1px dashed #d1d5db;">
-                        <p style="margin: 0; font-weight: 500; font-size: 0.9em;">Terima kasih atas pembayaran sewa kost yang telah Anda lakukan. Semoga Anda selalu betah dan nyaman tinggal di sini.</p>
+                    <div style="padding: 15px 0; text-align: center; border-bottom: 1px dashed #d1d5db;">
+                        <p style="margin: 0; font-size: 0.9em; font-weight: 600; color: #1e40af;">Terima kasih atas kepercayaan Anda.</p>
+                        <p style="margin: 5px 0 0; font-size: 0.8em; font-weight: 400; color: #6b7280;">Semoga Anda selalu betah dan nyaman tinggal di sini.</p>
                     </div>
                 </div>
                 <div style="text-align: center; padding: 10px 0; font-size: 0.75em; color: #9ca3af; font-style: normal;">
                     <p style="margin: 0;">Kuitansi ini dicetak secara digital pada</p>
                     <p style="margin: 2px 0 0; font-weight: 600; color: #6b7280;">${digitalPrintDate}, ${digitalPrintTime} WIB</p>
                 </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #d1d5db; padding-top: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #d1d5db; padding-top: 15px;">
                     <div style="flex-basis: 50%; text-align: left; padding-right: 15px;">
-                        <p style="margin: 0; font-size: 0.8em; color: #6b7280;">
+                        <p style="margin: 0; font-size: 0.7em; color: #6b7280;">
                             <i class="fas fa-map-marker-alt"></i> Kos Putra Bu Yani, Jalan Ngemplak No. 33, RT.4/RW.8, Sendangadi, Kec. Mlati, Kab. Sleman, Yogyakarta
                         </p>
-                        <p style="margin: 5px 0 0; font-size: 0.8em; color: #6b7280;">
+                        <p style="margin: 5px 0 0; font-size: 0.7em; color: #6b7280;">
                             <i class="fab fa-whatsapp"></i> WhatsApp: 0812-3456-7890
                         </p>
                     </div>
                     <div style="flex-basis: 50%; text-align: right;">
-                        <span style="display: block; font-size: 0.9em; color: #6b7280;">Yogyakarta, ${receiptDate}</span>
+                        <span style="display: block; font-size: 0.8em; color: #6b7280;">Yogyakarta, ${receiptDate}</span>
                         <img src="images/tanda-tangan.png" alt="Tanda Tangan" style="width: 30px; height: auto; margin: 10px 0 5px auto; display: block;">
-                        <span style="display: block; font-size: 0.9em; font-weight: 600; color: #1f2937;">(Susantoro)</span>
+                        <span style="display: block; font-size: 0.8em; color: #6b7280; font-weight: 600;">(Susantoro)</span>
                     </div>
                 </div>
             </div>
         `;
 
-        // Masukkan HTML ke div sementara
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = receiptHtml;
         tempDiv.style.position = 'absolute';
         tempDiv.style.left = '-9999px';
         document.body.appendChild(tempDiv);
         
-        // PERBAIKAN: Tunggu semua gambar selesai dimuat sebelum merender html2canvas
         const images = tempDiv.querySelectorAll('img');
         const promises = Array.from(images).map(img => new Promise((resolve, reject) => {
             if (img.complete) return resolve();
@@ -2861,113 +2872,42 @@ async function handleGenerateKuitansi(data) {
         }));
         await Promise.all(promises);
 
-        // Setelah semua gambar dimuat, panggil html2canvas
-        const canvas = await html2canvas(tempDiv.querySelector('#receipt-card-render'), { scale: 2 });
+        const canvas = await html2canvas(tempDiv.querySelector('#receipt-card-render'), { scale: 4 });
         
-        generatedReceiptData = canvas.toDataURL('image/png');
-    
-        // Tampilkan halaman dengan tombol preview dan share
+        // --- INI PERBAIKAN PENTING ---
+        // Simpan URL gambar kuitansi ke variabel global
+        generatedReceiptData = {
+            imageData: canvas.toDataURL('image/png'),
+            namaPenghuni: data.nama,
+        };
+        // --- AKHIR PERBAIKAN PENTING ---
+                
         contentArea.innerHTML = `
-            <div style="
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        padding: 50px 30px;
-        max-width: 500px;
-        margin: 40px auto;
-        background: #ffffff;
-        border-radius: 20px;
-        box-shadow: 0 15px 45px rgba(0,0,0,0.1);
-        text-align: center;
-        font-family: 'Poppins', sans-serif;
-        border-top: 5px solid var(--primary-color);
-    ">
-        <div style="
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            background-color: var(--primary-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 25px;
-            animation: bounce-in 0.8s;
-        ">
-            <i class="fas fa-check-circle" style="
-                font-size: 35px;
-                color: white;
-            "></i>
+        <div class="receipt-success-card">
+            <div class="status-icon-circle">
+                <i class="fas fa-check-circle status-icon-check"></i>
+            </div>
+            <h4 class="receipt-success-title">Kuitansi Berhasil Dibuat</h4>
+            <p class="receipt-success-message">Silakan pratinjau atau bagikan kuitansi digital kepada penghuni.</p>
+            <div class="receipt-actions">
+                <button id="preview-kuitansi-btn" class="receipt-btn preview"><i class="fas fa-eye"></i> Pratinjau Kuitansi</button>
+                <button id="download-kuitansi-btn" class="receipt-btn download"><i class="fas fa-download"></i> Unduh Kuitansi</button>
+                <button id="share-kuitansi-btn" class="receipt-btn share-whatsapp"><i class="fab fa-whatsapp"></i> Bagikan via WhatsApp</button>
+                <button id="cancel-kuitansi-btn" class="receipt-btn cancel"><i class="fas fa-arrow-left"></i> Kembali ke Database</button>
+            </div>
         </div>
-        <h4 style="
-            font-family: 'Playfair Display', serif;
-            font-size: 2em;
-            color: var(--primary-color);
-            margin: 0;
-        ">Kuitansi Berhasil Dibuat</h4>
-        <p style="
-            font-size: 1em;
-            color: var(--light-text-color);
-            margin: 15px 0 30px 0;
-            max-width: 400px;
-            line-height: 1.6;
-        ">Silakan pratinjau atau bagikan kuitansi digital kepada penghuni.</p>
-        <div style="
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            width: 100%;
-        ">
-            <button id="preview-kuitansi-btn" style="
-                background-color: var(--accent-color);
-                color: white;
-                border: none;
-                padding: 15px 25px;
-                border-radius: 12px;
-                font-size: 1em;
-                font-weight: 600;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            "><i class="fas fa-eye"></i> Pratinjau Kuitansi</button>
-            <button id="share-kuitansi-btn" style="
-            background-color: #25D366;
-            color: white;
-            border: none;
-            padding: 15px 25px;
-            border-radius: 12px;
-            font-size: 1em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        "><i class="fab fa-whatsapp"></i> Bagikan via WhatsApp</button>
-            <button id="cancel-kuitansi-btn" style="
-                background-color: #bdc3c7;
-                color: white;
-                border: none;
-                padding: 15px 25px;
-                border-radius: 12px;
-                font-size: 1em;
-                font-weight: 600;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            "><i class="fas fa-arrow-left"></i> Kembali ke Database</button>
-        </div>
-    </div>
         `;
         
         document.getElementById('preview-kuitansi-btn').addEventListener('click', handlePreviewKuitansi);
+        document.getElementById('download-kuitansi-btn').addEventListener('click', handleDownloadKuitansi);
         document.getElementById('share-kuitansi-btn').addEventListener('click', handleShareKuitansi);
         document.getElementById('cancel-kuitansi-btn').addEventListener('click', () => displayContent('database'));
 
     } catch (error) {
         showCustomAlert('Gagal membuat gambar kuitansi: ' + error.message);
         console.error('HTML2Canvas Error:', error);
-        displayContent('database'); // Kembali ke halaman database jika gagal
+        displayContent('database');
     } finally {
-        // Hapus elemen sementara dari DOM
         if (tempDiv.parentNode) {
             document.body.removeChild(tempDiv);
         }
