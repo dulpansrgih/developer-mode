@@ -941,47 +941,6 @@
     mix-blend-mode: difference; /* Efek teks keren yang warnanya berubah */
 }
 
-/* === GAYA BARU UNTUK KARTU SUKSES KUITANSI === */
-.success-card {
-    background-color: var(--card-background);
-    border-radius: var(--border-radius-base);
-    box-shadow: var(--shadow-base);
-    padding: 30px 25px;
-    text-align: center;
-    border-top: 5px solid #28a745;
-    margin-top: 30px;
-}
-
-.success-icon-wrapper {
-    width: 70px;
-    height: 70px;
-    margin: 0 auto 20px auto;
-    background-color: #e8f5e9;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.success-icon-wrapper .fa-check-circle {
-    font-size: 3em;
-    color: #28a745;
-}
-
-.success-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.6em;
-    color: var(--primary-color);
-    margin: 0 0 10px 0;
-}
-
-.success-message {
-    font-size: 0.95em;
-    color: var(--light-text-color);
-    line-height: 1.6;
-    max-width: 300px;
-    margin: 0 auto;
-}
 
 /* Tata letak tombol di bagian atas */
 .header-with-button-compact {
@@ -1174,7 +1133,7 @@
     transform: translate(-50%, -50%);
 }
 
-/* Gaya untuk modal ID Upload */
+/* Gaya untuk modal ID */
 #id-modal-backdrop {
     display: none;
     position: fixed;
@@ -1502,4 +1461,311 @@ body.modal-open #home-button {
     to {
         transform: rotate(360deg);
     }
+}
+
+/* Gaya Khusus untuk Tombol Draft Susantoro */
+.draft-btn {
+    background-color: #f39c12; /* Warna Oranye */
+}
+
+/* Efek hover untuk tombol oranye */
+.draft-btn:hover {
+    background-color: #e67e22; /* Warna Oranye lebih gelap saat hover */
+}
+
+/* Container untuk memastikan iframe responsif */
+.iframe-container {
+    position: relative;
+    width: 100%;
+    /* Atur tinggi sesuai kebutuhan, misalnya 75vh */
+    height: 75vh; 
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.responsive-iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+/* ===========================================
+/* PERBAIKAN TOTAL: MODAL PEMBAYARAN
+/* Menggabungkan elemen yang sudah ada dengan desain profesional baru
+/* =========================================== */
+
+/* Latar Belakang Modal (Backdrop) */
+#kwitansi-options-modal-backdrop {
+    /* Menggunakan properti dari .modal-backdrop yang sudah ada */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.75); /* Lebih gelap untuk fokus */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1050;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.4s ease-in-out;
+}
+
+#kwitansi-options-modal-backdrop.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Kontainer Modal */
+#kwitansi-options-modal {
+    background-color: var(--card-background); /* Menggunakan variabel tema */
+    padding: 35px;
+    border-radius: var(--border-radius-base); /* Menggunakan variabel tema */
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 450px;
+    position: relative;
+    transform: scale(0.9);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    font-family: 'Poppins', sans-serif;
+    text-align: center;
+}
+
+#kwitansi-options-modal-backdrop.show #kwitansi-options-modal {
+    transform: scale(1);
+}
+
+/* Header Modal */
+#kwitansi-options-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px dashed #e0e0e0;
+}
+
+#kwitansi-options-modal .modal-title {
+    font-size: 1.8em;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin: 0;
+    flex-grow: 1;
+    text-align: center;
+    font-family: 'Playfair Display', serif;
+}
+
+/* Tombol Tutup */
+.modal-close-btn {
+    /* Perubahan di sini: Warna yang lebih terang, background melingkar, dan efek hover */
+    background-color: #f1f5f9;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    font-size: 1.5em;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close-btn:hover {
+    background-color: #e74c3c;
+    color: white;
+    transform: rotate(90deg) scale(1.1);
+}
+
+/* Konten Badan Modal */
+#kwitansi-options-modal .modal-body {
+    padding: 0;
+    text-align: left;
+}
+
+/* Kotak Nama Penghuni */
+.tenant-info-box {
+    background-color: #e3f2fd;
+    border: 1px solid #c5dae9;
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.tenant-info-box p {
+    font-size: 1.1em;
+    color: #334155;
+    margin: 0;
+    font-weight: 500;
+}
+
+.tenant-info-box p strong {
+    font-weight: 700;
+    color: #1e293b;
+}
+
+/* Form Group & Dropdown */
+.form-group {
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.9em;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 8px;
+}
+
+.form-group select {
+    width: 150px;
+    padding: 12px 15px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    font-size: 0.9em;
+    color: #334155;
+    background-color: #f8fafc;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http://www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2364748b%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-6.5%200-11.9%203.8-13%209.7-1.1%205.9%201.1%2012.3%206.2%2016.9l133.9%20133.9c2.4%202.4%205.4%204.1%208.6%205.1%203.2%201.1%206.6%201.6%2010.1%201.6s6.9-.5%2010.1-1.6c3.2-1%206.2-2.7%208.6-5.1l133.9-133.9c5.1-4.6%207.3-11%206.2-16.9z%22/%3E%3C/svg%3E');
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px;
+    padding-right: 30px;
+}
+
+.form-group select:hover {
+    border-color: #94a3b8;
+}
+
+.form-group select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.2);
+    outline: none;
+}
+
+/* Catatan Merah */
+#single-month-note {
+    font-size: 0.8em;
+    color: #e74c3c;
+    margin-top: 10px;
+    font-style: italic;
+    text-align: center;
+}
+
+/* Tombol Aksi */
+.modal-actions {
+    margin-top: 30px;
+}
+
+.modal-btn.submit {
+    width: 100%;
+    padding: 15px 20px;
+    background-color: var(--primary-color);
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 8px 15px rgba(13, 71, 161, 0.2);
+}
+
+.modal-btn.submit:hover {
+    background-color: #0c3b8a;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(13, 71, 161, 0.3);
+}
+
+.modal-btn.submit:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 10px rgba(13, 71, 161, 0.2);
+}
+
+/* ===========================================
+/* GAYA BARU: KOTAK NAMA PENGHUNI PROFESIONAL
+/* =========================================== */
+
+.tenant-info-box {
+    background-color: #f8f9fa; /* Warna latar belakang abu-abu sangat terang */
+    border: 1px solid #e9ecef; /* Border tipis */
+    border-left: 5px solid var(--primary-color); /* Garis vertikal biru yang menonjol */
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); /* Bayangan yang lebih halus */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* Sejajarkan teks ke kiri */
+    text-align: left;
+}
+
+.tenant-info-box p {
+    font-size: 1.1em;
+    color: var(--text-color);
+    margin: 0;
+    line-height: 1.4;
+    font-weight: 500;
+}
+
+.tenant-info-box strong {
+    font-size: 1.4em;
+    font-weight: 700;
+    color: var(--primary-color);
+    display: block; /* Pastikan nama berada di baris baru */
+    margin-bottom: 2px;
+}
+
+/* ===========================================
+/* GAYA FINAL: TOMBOL TUTUP MODAL
+/* Untuk kelas kwitansi-close-btn
+/* =========================================== */
+.kwitansi-close-btn {
+    /* Posisi absolut untuk melayang di atas modal */
+    position: absolute;
+    top: 15px;
+    right: 15px;
+
+    /* Tampilan & Bentuk */
+    width: 36px;
+    height: 36px;
+    border-radius: 50%; /* Membuat tombol menjadi lingkaran */
+    background-color: #f0f4f8; /* Latar belakang abu-abu muda */
+    border: 1px solid #e0e0e0; /* Garis tepi tipis */
+    color: var(--light-text-color); /* Warna ikon 'x' */
+    font-size: 1.5rem; /* Ukuran ikon 'x' */
+
+    /* Perataan Ikon di Tengah */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    /* Interaksi */
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    z-index: 10;
+}
+
+.kwitansi-close-btn:hover {
+    background-color: #e74c3c; /* Warna latar belakang berubah menjadi merah */
+    color: white; /* Warna ikon 'x' menjadi putih */
+    transform: rotate(90deg) scale(1.1); /* Efek berputar dan sedikit membesar */
+    border-color: #e74c3c; /* Warna border mengikuti hover */
 }

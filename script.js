@@ -143,8 +143,21 @@ document.body.addEventListener('click', (e) => {
         }, 400);
     };
 
+    if (target.closest('.kwitansi-close-btn')) {
+        const modalBackdrop = document.getElementById('kwitansi-options-modal-backdrop');
+        if (modalBackdrop) {
+            modalBackdrop.classList.remove('show');
+            setTimeout(() => {
+                modalBackdrop.classList.add('hidden');
+            }, 300);
+        }
+    }
+
     if (target.closest('.menu-card') || target.closest('.cek-detail-btn')) {
         handleMenuClick(target.closest('.menu-card') || target.closest('.cek-detail-btn'));
+    }
+    else if (target.closest('.modal-close-btn') || target.closest('#custom-alert .form-btn')) {
+        handleCloseModal(target);
     }
     else if (target.closest('#back-button')) {
         goBack();
@@ -171,10 +184,42 @@ document.body.addEventListener('click', (e) => {
     else if (target.closest('.filter-modal-btn')) {
         handleWifiFilter(target);
     }
-    else if (target.closest('.generate-btn')) {
-        displayContent('generate-pembayaran-content');
-        displayGeneratePembayaranForm({ ...target.closest('.generate-btn').dataset });
+        else if (target.closest('.generate-btn')) {
+        // Dapatkan data dari tombol yang diklik
+        const data = {
+            nama: target.closest('.generate-btn').dataset.nama,
+            kamar: target.closest('.generate-btn').dataset.kamar,
+            nominal: target.closest('.generate-btn').dataset.nominal,
+        };
+        // Panggil fungsi modal baru
+        showKwitansiOptionsModal(data);
     }
+
+        else if (target.closest('#modal-generate-kuitansi-btn')) {
+        const button = target.closest('#modal-generate-kuitansi-btn');
+        const data = {
+            nama: button.dataset.nama,
+            kamar: button.dataset.kamar,
+            nominal: button.dataset.nominal,
+            whatsapp: button.dataset.whatsapp,
+            startMonth: document.getElementById('modal-start-month').value,
+            endMonth: document.getElementById('modal-end-month').value,
+        };
+
+        if (!data.startMonth) {
+            showCustomAlert('Bulan awal pembayaran wajib diisi.');
+            return;
+        }
+
+        handleGenerateKuitansi(data);
+        
+        const modalBackdrop = document.getElementById('kwitansi-options-modal-backdrop');
+        if (modalBackdrop) {
+            modalBackdrop.classList.remove('show');
+            setTimeout(() => modalBackdrop.classList.add('hidden'), 300);
+        }
+    }
+
     else if (target.closest('.reminder-btn')) {
         handleReminderClick(target.closest('.reminder-btn'));
     }
@@ -2579,113 +2624,117 @@ function displayGeneratePembayaranForm(data) {
 }
 
 // Temukan fungsi handleGenerateKuitansi
-async function handleGenerateKuitansi(e) {
-    const form = e.target.closest('form');
-    if (!form) return;
+/**
+ * Menampilkan modal untuk memilih bulan pembayaran sebelum membuat kuitansi.
+ * @param {object} data - Data penghuni dari tombol e-Kwitansi yang diklik.
+ */
+function showKwitansiOptionsModal(data) {
+    const modalBackdrop = document.getElementById('kwitansi-options-modal-backdrop');
+    const modalContent = document.getElementById('kwitansi-options-modal');
 
-    const namaPenghuni = form.querySelector('#nama-penghuni-bayar-hidden')?.value;
-    const ruangKamar = form.querySelector('#ruang-kamar-bayar').value;
-    const nominal = form.querySelector('#nominal-bayar').value;
-    const startMonth = form.querySelector('#start-month').value;
-    const endMonth = form.querySelector('#end-month').value;
-
-    if (!namaPenghuni || !ruangKamar || !nominal || !startMonth) {
-        showCustomAlert('Nama penghuni, kamar, nominal, dan bulan awal wajib diisi untuk membuat kuitansi.');
-        return;
-    }
-
-    const button = e.target.closest('button');
-    button.disabled = true;
-    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Membuat...';
-
-    const nominalInWords = numberToText(nominal);
-    const receiptDate = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-    const periodeTeks = endMonth ? `${startMonth} - ${endMonth}` : startMonth;
-    
-    // Buat elemen kwitansi sementara di luar layar untuk di-render
-    const receiptContainer = document.createElement('div');
-    receiptContainer.style.position = 'absolute';
-    receiptContainer.style.left = '-9999px';
-    const now = new Date();
-    const digitalPrintDate = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-    const digitalPrintTime = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-
-    receiptContainer.innerHTML = `
-        <div id="receipt-card-render" style="width: 380px; font-family: 'Segoe UI', Arial, sans-serif; padding: 15px 25px 25px; box-sizing: border-box; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
-    
-        <div style="text-align: center; border-bottom: 2px solid #e0e0e0; padding-bottom: 15px; margin-bottom: 15px;">
-            <img src="images/logo-kwitansi.jpg" alt="Logo Kost Bu Yani" style="width: 120px; height: auto; margin-bottom: 5px;">
-            <h2 style="margin: 0; font-size: 1.8em; color: #1e3a8a;">KOST PUTRA BU YANI</h2>
-            <p style="margin: 5px 0 0; font-size: 0.9em; color: #6b7280;">Kos Putra Bu Yani, Jalan Ngemplak No. 33, RT.4/RW.8, Sendangadi, Kec. Mlati, Kab. Sleman, Yogyakarta</p>
+    const formHtml = `
+    <button class="kwitansi-close-btn">×</button> 
+        <div class="modal-header">
+            <h3 class="modal-title">Pilih Periode Pembayaran</h3>
         </div>
-
-        <div style="text-align: center; margin-bottom: 15px;">
-            <h3 style="margin: 0; font-size: 1.5em; color: #1f2937;">KUITANSI PEMBAYARAN</h3>
-        </div>
-
-        <div style="text-align: center; border: 1px dashed #d1d5db; padding: 10px 15px; border-radius: 8px; margin-bottom: 15px;">
-            <p style="margin: 0 0 2px 0; font-size: 1.1em; font-weight: 600; color: #1e40af;">Jumlah Pembayaran</p>
-            <p style="margin: 0; font-size: 1.6em; font-weight: 700; color: #1e40af;">Rp ${formatRupiah(nominal)}</p>
-        </div>
-
-        <div style="text-align: center; padding: 0 0 15px 0; font-style: italic; margin-bottom: 15px; border-bottom: 1px dashed #d1d5db;">
-            <p style="margin: 0; font-weight: 500; font-size: 0.9em;">"Terbilang: ${nominalInWords} Rupiah"</p>
-        </div>
-
-        <div style="font-size: 1em; color: #374151;">
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #d1d5db;">
-                <span style="font-weight: 600; color: #1f2937;">Telah Diterima Dari</span>
-                <span style="font-weight: 500; text-align: right;">${namaPenghuni}</span>
+        <div class="modal-body">
+             <div class="tenant-info-box">
+                <p><strong>${data.nama}</strong> <span style="font-weight: normal;">Kamar ${data.kamar}</span></p>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #d1d5db;">
-                <span style="font-weight: 600; color: #1f2937;">Untuk Pembayaran</span>
-                <span style="font-weight: 500; text-align: right;">Sewa Kost Kamar ${ruangKamar}</span>
+            <div class="form-group">
+                <label for="modal-start-month">Pembayaran sewa untuk:</label>
+                <select id="modal-start-month" required>
+                    <option value="">Bulan Mulai</option>
+                    <option value="Januari">Januari</option>
+                    <option value="Februari">Februari</option>
+                    <option value="Maret">Maret</option>
+                    <option value="April">April</option>
+                    <option value="Mei">Mei</option>
+                    <option value="Juni">Juni</option>
+                    <option value="Juli">Juli</option>
+                    <option value="Agustus">Agustus</option>
+                    <option value="September">September</option>
+                    <option value="Oktober">Oktober</option>
+                    <option value="November">November</option>
+                    <option value="Desember">Desember</option>
+                </select>
+                <select id="modal-end-month">
+                    <option value="">Bulan Akhir</option>
+                    <option value="Januari">Januari</option>
+                    <option value="Februari">Februari</option>
+                    <option value="Maret">Maret</option>
+                    <option value="April">April</option>
+                    <option value="Mei">Mei</option>
+                    <option value="Juni">Juni</option>
+                    <option value="Juli">Juli</option>
+                    <option value="Agustus">Agustus</option>
+                    <option value="September">September</option>
+                    <option value="Oktober">Oktober</option>
+                    <option value="November">November</option>
+                    <option value="Desember">Desember</option>
+                </select>
+                <p id="modal-single-month-note" style="color: red; font-size: 0.8em; margin-top: 5px; display: none;">Jika hanya 1 bulan, tidak perlu memilih periode akhir.</p>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #d1d5db;">
-                <span style="font-weight: 600; color: #1f2937;">Periode</span>
-                <span style="font-weight: 500; text-align: right;">${periodeTeks}</span>
-            </div>
-            <div style="padding: 15px 0; text-align: center; font-style: italic; border-bottom: 1px dashed #d1d5db;">
-                <p style="margin: 0; font-weight: 500; font-size: 0.9em;">Terima kasih atas pembayaran sewa kost yang telah Anda lakukan. Semoga Anda selalu betah dan nyaman tinggal di sini.</p>
+            <div class="modal-actions">
+                <button id="modal-generate-kuitansi-btn" class="modal-btn submit" data-nama="${data.nama}" data-kamar="${data.kamar}" data-nominal="${data.nominal}" data-whatsapp="${data.whatsapp}">Buat Kuitansi</button>
             </div>
         </div>
-
-        <div style="text-align: center; padding: 10px 0; font-size: 0.75em; color: #9ca3af; font-style: normal;">
-            <p style="margin: 0;">Kuitansi ini dicetak secara digital pada</p>
-            <p style="margin: 2px 0 0; font-weight: 600; color: #6b7280;">${digitalPrintDate}, ${digitalPrintTime} WIB</p>
-        </div>
-        
-        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #d1d5db; padding-top: 20px;">
-            <div style="flex-basis: 50%; text-align: left; padding-right: 15px;">
-                <p style="margin: 0; font-size: 0.8em; color: #6b7280;">
-                    <i class="fas fa-map-marker-alt"></i> Kos Putra Bu Yani, Jalan Ngemplak No. 33, RT.4/RW.8, Sendangadi, Kec. Mlati, Kab. Sleman, Yogyakarta
-                </p>
-                <p style="margin: 5px 0 0; font-size: 0.8em; color: #6b7280;">
-                    <i class="fab fa-whatsapp"></i> WhatsApp: 0812-3456-7890
-                </p>
-            </div>
-            <div style="flex-basis: 50%; text-align: right;">
-                <span style="display: block; font-size: 0.9em; color: #6b7280;">Yogyakarta, ${receiptDate}</span>
-                <img src="images/tanda-tangan.png" alt="Tanda Tangan" style="width: 30px; height: auto; margin: 10px 0 5px auto; display: block;">
-                <span style="display: block; font-size: 0.9em; font-weight: 600; color: #1f2937;">(Susantoro)</span>
-            </div>
-        </div>
-    </div>
     `;
-    document.body.appendChild(receiptContainer);
 
-    try {
-        const canvas = await html2canvas(receiptContainer.querySelector('#receipt-card-render'), { scale: 2 });
-        generatedReceiptData = canvas.toDataURL('images/logo-kos.jpg');
-        document.getElementById('initial-payment-view').classList.add('hidden');
-        document.getElementById('generated-actions-container').classList.remove('hidden');
-    } catch (error) {
-        showCustomAlert('Gagal membuat gambar kwitansi: ' + error.message);
-    } finally {
-        document.body.removeChild(receiptContainer);
-        button.disabled = false;
-        button.innerHTML = 'Buat Kuitansi';
+    modalContent.innerHTML = formHtml;
+    modalBackdrop.classList.remove('hidden');
+    modalBackdrop.classList.add('show');
+
+    // Tambahkan event listener untuk tombol 'close'
+    const closeBtn = modalContent.querySelector('.modal-close-btn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            handleCloseModal({ target: modalBackdrop });
+        });
     }
+    
+    // Tambahkan event listener untuk tombol 'Buat Kuitansi'
+    const generateBtn = document.getElementById('modal-generate-kuitansi-btn');
+    generateBtn.addEventListener('click', () => {
+        const startMonth = document.getElementById('modal-start-month').value;
+        const endMonth = document.getElementById('modal-end-month').value;
+        
+        if (!startMonth) {
+            showCustomAlert('Bulan awal pembayaran wajib diisi.');
+            return;
+        }
+
+        // Tampilkan animasi loading pada tombol
+        generateBtn.disabled = true;
+        generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+        
+        handleGenerateKuitansi({
+            nama: data.nama,
+            kamar: data.kamar,
+            nominal: data.nominal,
+            startMonth: startMonth,
+            endMonth: endMonth,
+            whatsapp: data.whatsapp
+        });
+
+        // Tutup modal setelah pemanggilan fungsi
+        handleCloseModal({ target: modalBackdrop });
+    });
+    
+    // Logika catatan satu bulan
+    const startMonthSelect = document.getElementById('modal-start-month');
+    const endMonthSelect = document.getElementById('modal-end-month');
+    const singleMonthNote = document.getElementById('modal-single-month-note');
+    
+    const updateNoteVisibility = () => {
+        if (startMonthSelect.value && !endMonthSelect.value) {
+            singleMonthNote.style.display = 'block';
+        } else {
+            singleMonthNote.style.display = 'none';
+        }
+    };
+    startMonthSelect.addEventListener('change', updateNoteVisibility);
+    endMonthSelect.addEventListener('change', updateNoteVisibility);
 }
 
 function handlePreviewKuitansi() {
@@ -2699,24 +2748,232 @@ function handlePreviewKuitansi() {
 }
 
 function handleShareKuitansi() {
-    if (!generatedReceiptData) {
+    if (!generatedReceiptData || !generatedReceiptData.imageData) {
         showCustomAlert('Tidak ada kuitansi untuk dibagikan. Buat kuitansi terlebih dahulu.');
         return;
     }
 
-    const namaPenghuni = document.getElementById('nama-penghuni-bayar-hidden').value;
+    const namaPenghuni = generatedReceiptData.namaPenghuni;
     const shareText = `Halo ${namaPenghuni}, ini adalah kuitansi pembayaran sewa kost Anda.`;
 
-    // Buat file dari data URL (hanya berfungsi jika pengguna mengklik dari perangkat seluler)
+    // Unduh gambar kuitansi secara otomatis
     const link = document.createElement('a');
-    link.href = generatedReceiptData;
+    link.href = generatedReceiptData.imageData;
     link.download = `kwitansi_${namaPenghuni.replace(/\s+/g, '_')}.png`;
     link.style.display = 'none';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 
-    // Langsung buka WhatsApp dengan pesan saja (tanpa gambar)
+    // Buka WhatsApp dengan pesan teks
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
     window.open(whatsappUrl, '_blank');
+}
+
+
+/**
+ * Menangani proses pembuatan kuitansi dari data yang dipilih.
+ * @param {object} data - Data yang dibutuhkan untuk membuat kuitansi.
+ */
+async function handleGenerateKuitansi(data) {
+    const contentArea = document.getElementById('content-area');
+
+    try {
+        // PERBAIKAN: Pastikan nilai nominal adalah angka yang bersih
+        const nominal = parseInt(String(data.nominal).replace(/[^0-9]/g, '')) || 0;
+        const nominalInWords = numberToText(nominal);
+        const nominalFormatted = formatRupiah(nominal);
+        const periodeTeks = data.endMonth ? `${data.startMonth} - ${data.endMonth}` : data.startMonth;
+        const receiptDate = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        const now = new Date();
+        const digitalPrintDate = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        const digitalPrintTime = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+        const receiptHtml = `
+            <div id="receipt-card-render" style="width: 380px; font-family: 'Segoe UI', Arial, sans-serif; padding: 15px 25px 25px; box-sizing: border-box; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+                <div style="text-align: center; border-bottom: 2px solid #e0e0e0; padding-bottom: 15px; margin-bottom: 15px;">
+                    <img src="images/logo-kwitansi.jpg" alt="Logo Kost Bu Yani" style="width: 120px; height: auto; margin-bottom: 5px;">
+                    <h2 style="margin: 0; font-size: 1.8em; color: #1e3a8a;">KOST PUTRA BU YANI</h2>
+                    <p style="margin: 5px 0 0; font-size: 0.9em; color: #6b7280;">Kos Putra Bu Yani, Jalan Ngemplak No. 33, RT.4/RW.8, Sendangadi, Kec. Mlati, Kab. Sleman, Yogyakarta</p>
+                </div>
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0; font-size: 1.5em; color: #1f2937;">KUITANSI PEMBAYARAN</h3>
+                </div>
+                <div style="text-align: center; border: 1px dashed #d1d5db; padding: 10px 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <p style="margin: 0 0 2px 0; font-size: 1.1em; font-weight: 600; color: #1e40af;">Jumlah Pembayaran</p>
+                    <p style="margin: 0; font-size: 1.6em; font-weight: 700; color: #1e40af;">Rp ${nominalFormatted}</p>
+                </div>
+                <div style="text-align: center; padding: 0 0 15px 0; font-style: italic; margin-bottom: 15px; border-bottom: 1px dashed #d1d5db;">
+                    <p style="margin: 0; font-weight: 500; font-size: 0.9em;">"Terbilang: ${nominalInWords} Rupiah"</p>
+                </div>
+                <div style="font-size: 1em; color: #374151;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #d1d5db;">
+                        <span style="font-weight: 600; color: #1f2937;">Telah Diterima Dari</span>
+                        <span style="font-weight: 500; text-align: right;">${data.nama}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #d1d5db;">
+                        <span style="font-weight: 600; color: #1f2937;">Untuk Pembayaran</span>
+                        <span style="font-weight: 500; text-align: right;">Sewa Kost Kamar ${data.kamar}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #d1d5db;">
+                        <span style="font-weight: 600; color: #1f2937;">Periode</span>
+                        <span style="font-weight: 500; text-align: right;">${periodeTeks}</span>
+                    </div>
+                    <div style="padding: 15px 0; text-align: center; font-style: italic; border-bottom: 1px dashed #d1d5db;">
+                        <p style="margin: 0; font-weight: 500; font-size: 0.9em;">Terima kasih atas pembayaran sewa kost yang telah Anda lakukan. Semoga Anda selalu betah dan nyaman tinggal di sini.</p>
+                    </div>
+                </div>
+                <div style="text-align: center; padding: 10px 0; font-size: 0.75em; color: #9ca3af; font-style: normal;">
+                    <p style="margin: 0;">Kuitansi ini dicetak secara digital pada</p>
+                    <p style="margin: 2px 0 0; font-weight: 600; color: #6b7280;">${digitalPrintDate}, ${digitalPrintTime} WIB</p>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #d1d5db; padding-top: 20px;">
+                    <div style="flex-basis: 50%; text-align: left; padding-right: 15px;">
+                        <p style="margin: 0; font-size: 0.8em; color: #6b7280;">
+                            <i class="fas fa-map-marker-alt"></i> Kos Putra Bu Yani, Jalan Ngemplak No. 33, RT.4/RW.8, Sendangadi, Kec. Mlati, Kab. Sleman, Yogyakarta
+                        </p>
+                        <p style="margin: 5px 0 0; font-size: 0.8em; color: #6b7280;">
+                            <i class="fab fa-whatsapp"></i> WhatsApp: 0812-3456-7890
+                        </p>
+                    </div>
+                    <div style="flex-basis: 50%; text-align: right;">
+                        <span style="display: block; font-size: 0.9em; color: #6b7280;">Yogyakarta, ${receiptDate}</span>
+                        <img src="images/tanda-tangan.png" alt="Tanda Tangan" style="width: 30px; height: auto; margin: 10px 0 5px auto; display: block;">
+                        <span style="display: block; font-size: 0.9em; font-weight: 600; color: #1f2937;">(Susantoro)</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Masukkan HTML ke div sementara
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = receiptHtml;
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        document.body.appendChild(tempDiv);
+        
+        // PERBAIKAN: Tunggu semua gambar selesai dimuat sebelum merender html2canvas
+        const images = tempDiv.querySelectorAll('img');
+        const promises = Array.from(images).map(img => new Promise((resolve, reject) => {
+            if (img.complete) return resolve();
+            img.onload = resolve;
+            img.onerror = () => reject(new Error(`Gagal memuat gambar: ${img.src}`));
+        }));
+        await Promise.all(promises);
+
+        // Setelah semua gambar dimuat, panggil html2canvas
+        const canvas = await html2canvas(tempDiv.querySelector('#receipt-card-render'), { scale: 2 });
+        
+        generatedReceiptData = {
+            imageData: canvas.toDataURL('image/png'),
+            namaPenghuni: data.nama,
+            // Anda juga bisa menyimpan data lain yang relevan di sini
+        };
+                
+        // Tampilkan halaman dengan tombol preview dan share
+        contentArea.innerHTML = `
+            <div style="
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 50px 30px;
+        max-width: 500px;
+        margin: 40px auto;
+        background: #ffffff;
+        border-radius: 20px;
+        box-shadow: 0 15px 45px rgba(0,0,0,0.1);
+        text-align: center;
+        font-family: 'Poppins', sans-serif;
+        border-top: 5px solid var(--primary-color);
+    ">
+        <div style="
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 25px;
+            animation: bounce-in 0.8s;
+        ">
+            <i class="fas fa-check-circle" style="
+                font-size: 35px;
+                color: white;
+            "></i>
+        </div>
+        <h4 style="
+            font-family: 'Playfair Display', serif;
+            font-size: 2em;
+            color: var(--primary-color);
+            margin: 0;
+        ">Kuitansi Berhasil Dibuat</h4>
+        <p style="
+            font-size: 1em;
+            color: var(--light-text-color);
+            margin: 15px 0 30px 0;
+            max-width: 400px;
+            line-height: 1.6;
+        ">Silakan pratinjau atau bagikan kuitansi digital kepada penghuni.</p>
+        <div style="
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+        ">
+            <button id="preview-kuitansi-btn" style="
+                background-color: var(--accent-color);
+                color: white;
+                border: none;
+                padding: 15px 25px;
+                border-radius: 12px;
+                font-size: 1em;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            "><i class="fas fa-eye"></i> Pratinjau Kuitansi</button>
+            <button id="share-kuitansi-btn" style="
+            background-color: #25D366;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 12px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        "><i class="fab fa-whatsapp"></i> Bagikan via WhatsApp</button>
+            <button id="cancel-kuitansi-btn" style="
+                background-color: #bdc3c7;
+                color: white;
+                border: none;
+                padding: 15px 25px;
+                border-radius: 12px;
+                font-size: 1em;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            "><i class="fas fa-arrow-left"></i> Kembali ke Database</button>
+        </div>
+    </div>
+        `;
+        
+        document.getElementById('preview-kuitansi-btn').addEventListener('click', handlePreviewKuitansi);
+        document.getElementById('share-kuitansi-btn').addEventListener('click', handleShareKuitansi);
+        document.getElementById('cancel-kuitansi-btn').addEventListener('click', () => displayContent('database'));
+
+    } catch (error) {
+        showCustomAlert('Gagal membuat gambar kuitansi: ' + error.message);
+        console.error('HTML2Canvas Error:', error);
+        displayContent('database'); // Kembali ke halaman database jika gagal
+    } finally {
+        // Hapus elemen sementara dari DOM
+        if (tempDiv.parentNode) {
+            document.body.removeChild(tempDiv);
+        }
+    }
 }

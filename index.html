@@ -122,6 +122,11 @@
         </div>
     </div>
 
+    <div id="kwitansi-options-modal-backdrop" class="hidden">
+        <div id="kwitansi-options-modal" class="modal-container">
+            </div>
+    </div>
+
     <div id="wifi-filter-modal-backdrop" class="hidden">
         <div id="wifi-filter-modal">
             <div class="modal-header">
@@ -193,7 +198,7 @@
             <h4 class="modal-title">ID (KTP/SIM)</h4>
         </div>
         <div class="modal-body">
-            <img id="id-image-preview" src="" alt="Preview ID" />
+            <iframe id="id-iframe-preview" src="about:blank" frameborder="0" style="width: 100%; height: 400px; border: none;"></iframe>
         </div>
     </div>
 </div>
@@ -361,22 +366,7 @@
                 <button type="button" class="form-btn" id="generate-kuitansi-btn">Buat Kuitansi</button>
                 <button type="button" class="form-btn cancel" id="cancel-kuitansi-btn">Batal</button>
             </form>
-        </div>
-        
-        <div id="generated-actions-container" class="hidden">
-            <div class="success-card">
-                <div class="success-icon-wrapper">
-                    <i class="fas fa-check-circle"></i>
-                </div>
-                <h4 class="success-title">Kuitansi Berhasil Dibuat!</h4>
-                <p class="success-message">Sekarang Anda dapat melihat preview atau membagikan kuitansi melalui WhatsApp.</p>
-                <div class="button-group" style="margin-top: 20px;">
-                    <button class="form-btn" id="preview-kuitansi-btn" style="background-color: #6c757d;"><i class="fas fa-eye"></i> Preview</button>
-                    <button class="form-btn" id="share-kuitansi-btn" style="background-color: #25D366;"><i class="fab fa-whatsapp"></i> Share WA</button>
-                </div>
-            </div>
-        </div>
-    </div>
+        </div>    
     
     <div id="informasi-content" class="hidden-content">
         <h3 style="color: var(--primary-color); margin-bottom: 20px;">Informasi</h3>
@@ -434,6 +424,53 @@
             </ul>
         </div>
     </div>
+
+
+    <div id="susantoro-draft-content" class="hidden-content">
+        <h3 style="color: var(--primary-color); margin-bottom: 20px;">Draft Susantoro</h3>
+        <p>Di sini Anda bisa menemukan data draft Susantoro.</p>
+        <hr style="margin: 25px 0;">
+        <div class="menu-grid">
+            <button class="menu-card datasheet-card" data-page="datasheet-view">
+                <i class="fas fa-file-excel icon"></i>
+                <span>Data Sheet</span>
+            </button>
+            <button class="menu-card catatan-card" data-page="catatan-view">
+                <i class="fas fa-sticky-note icon"></i>
+                <span>Catatan</span>
+            </button>
+            <button class="menu-card public-db-card" data-page="public-database-content">
+                <i class="fas fa-eye icon"></i>
+                <span>Database Public</span>
+            </button>
+            <div id="public-database-content" class="hidden-content page-content">
+                <h3 style="color: var(--primary-color); margin-bottom: 20px;">Database Public</h3>
+                <hr style="margin: 25px 0;">
+                <div class="iframe-container">
+                    <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vR9JT89XplcoG9dRf6aFnhn2LjQi4UPqd7WWAwz4R9EqCG5k1g1akBYON1ZNyAGzVXsFUfNU0uuhhFY/pubhtml?gid=241652404&single=true" class="responsive-iframe" frameborder="0"></iframe>
+                </div>
+            </div>
+            <button class="menu-card access-datasheet-card" data-page="access-datasheet-view">
+                <i class="fas fa-table icon"></i>
+                <span>Acces DataSheet</span>
+            </button>
+                <div id="access-datasheet-content" class="hidden-content page-content">
+                    <h3 style="color: var(--primary-color); margin-bottom: 20px;">Acces DataSheet</h3>
+                    <p>Tampilan langsung dari Data Sheet yang dapat dilihat oleh umum.</p>
+                    <hr style="margin: 25px 0;">
+                    <div class="iframe-container">
+                        <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vSQPQKNhVzzlPYFT7pDqj_3jDG3OxVrLVQYgGoKOPfyYRLc17hAAnT86YLA22g1o71SYMS08L63rYXl/pubhtml" class="responsive-iframe" frameborder="0"></iframe>
+                    </div>
+                    <a href="https://docs.google.com/spreadsheets/d/1u2Tx-jNCf_Uln8H9yC_RbmnRYgnyhz19w5oQxXhmecc/" target="_blank" class="button-link via-excel-btn">
+                        <i class="fas fa-external-link-alt icon"></i>
+                        <span>Via Excel</span>
+                    </a>
+                </div>
+        </div>
+    </div>
+    
+
+    
 
     <div id="datasheet-content" class="hidden-content">
         <div class="header-with-button-compact">
