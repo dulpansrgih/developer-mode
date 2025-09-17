@@ -1740,6 +1740,6 @@ body {
 /* MEDIA QUERY KHUSUS UNTUK MOBILE */
 @media (max-width: 600px) {
     .receipt-preview-modal-content {
-        max-width: 90vw; /* Lebar maksimal 90% dari viewport width */
+        max-width: 80vw; /* Lebar maksimal 90% dari viewport width */
     }
 }
