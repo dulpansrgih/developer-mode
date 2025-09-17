@@ -2732,18 +2732,16 @@ function handlePreviewKuitansi() {
         showCustomAlert('Tidak ada kuitansi untuk ditampilkan. Buat kuitansi terlebih dahulu.');
         return;
     }
-    const modal = document.getElementById('receipt-preview-modal-backdrop');
+    
+    const modalBackdrop = document.getElementById('receipt-preview-modal-backdrop');
     const image = document.getElementById('receipt-preview-image');
 
     // Mengatur sumber gambar dari data kuitansi yang sudah disimpan
     image.src = generatedReceiptData.imageData;
 
-    // KODE YANG PENTING: Menyesuaikan ukuran gambar agar pas di layar
-    image.style.cssText = "width: 100%; height: auto; max-width: 380px; display: block; margin: auto;";
-
     // Menampilkan modal pratinjau
-    modal.classList.remove('hidden');
-    modal.classList.add('show');
+    modalBackdrop.classList.remove('hidden');
+    modalBackdrop.classList.add('show');
 }
 
 function handleDownloadKuitansi() {

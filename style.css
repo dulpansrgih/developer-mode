@@ -1719,3 +1719,27 @@ body {
     80% { transform: scale(0.9); }
     100% { transform: scale(1); }
 }
+
+/* GAYA UMUM UNTUK MODAL PRATINJAU */
+.receipt-preview-modal-content {
+    position: relative;
+    padding: 20px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    max-width: 380px; /* Lebar default untuk desktop */
+    margin: auto;
+}
+
+.receipt-preview-modal-content img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+/* MEDIA QUERY KHUSUS UNTUK MOBILE */
+@media (max-width: 600px) {
+    .receipt-preview-modal-content {
+        max-width: 90vw; /* Lebar maksimal 90% dari viewport width */
+    }
+}
