@@ -319,12 +319,9 @@ document.body.addEventListener('click', (e) => {
 
 });
 
-// ... (SEMUA FUNGSI LAINNYA DI BAWAH INI) ...
-
 // ===============================================
 // === LOGIKA FUNGSI TOMBOL YANG DIPERBAIKI ======
 // ===============================================
-
 
 /**
  * Menampilkan halaman e-Kwitansi dan mengisi data penghuni secara otomatis.
@@ -410,8 +407,14 @@ function handleReminderClick(button) {
         return;
     }
 
+    let cleanWhatsapp = whatsapp.replace(/[^0-9]/g, ''); // Hapus semua karakter non-angka
+    if (cleanWhatsapp.startsWith('0')) {
+        cleanWhatsapp = '62' + cleanWhatsapp.substring(1); // Ganti '0' pertama dengan '62'
+    }
+
     const formattedNominal = formatRupiah(nominal);
     const formattedJatuhTempo = formatDate(jatuhTempo);
+    const hariJatuhTempo = getIndonesianDayOfWeek(jatuhTempo);
 
     const message = `
 *PEMBERITAHUAN JATUH TEMPO PEMBAYARAN SEWA KAMAR*
@@ -420,9 +423,9 @@ Dengan hormat,
 Yth. Sdr. ${nama} (Penghuni Kamar ${kamar})
 
 Melalui pesan ini, kami ingin mengingatkan bahwa pembayaran sewa kamar Saudara akan jatuh tempo pada:
-*Senin, ${formattedJatuhTempo}*
+**${hariJatuhTempo}, ${formattedJatuhTempo}**
 
-Adapun rincian tagihan Saudara adalah sebesar *Rp. ${formattedNominal}*. Mohon untuk dapat melakukan pembayaran sebelum atau tepat pada tanggal jatuh tempo untuk menghindari keterlambatan.
+Adapun rincian tagihan Saudara adalah sebesar Rp. ${formattedNominal}/bulan. Mohon untuk dapat melakukan pembayaran sesuai kesepakatan.
 
 Pembayaran dapat dilakukan melalui transfer ke salah satu rekening berikut:
 1) BCA : 2350332203 (Drs. Susantoro)
@@ -431,9 +434,11 @@ Pembayaran dapat dilakukan melalui transfer ke salah satu rekening berikut:
 4) BNI : 0211447416 (SRI YANIARI)
 5) Mandiri : 1850004105075 (SUSANTORO)
 
-Jika Saudara sudah melakukan pembayaran, mohon abaikan pesan ini.
+_Jika Saudara sudah melakukan pembayaran, mohon abaikan pesan ini_.
+> _sent via portal-kos.dulpanadisaragih.my.id/#reminder_
 
 Atas perhatian dan kerjasamanya, kami ucapkan terima kasih.
+
 Hormat kami,
 Pengelola Kost Putra Bu Yani
     `.trim();
@@ -501,6 +506,10 @@ function renderDatabaseForm(contentArea, data) {
 
         } else { // Status 'Tidak Tersedia' (Ada Penghuni)
             let jatuhTempoValue = data.jatuhTempo ? new Date(data.jatuhTempo).toISOString().split('T')[0] : '';
+
+            const nominalOptions = [325000, 350000, 375000, 400000];
+            const isNominalLainnya = data.nominal && !nominalOptions.includes(Number(data.nominal));
+
             container.innerHTML = `
                 <form id="database-form" class="database-form">
                     <h4 style="text-align:center; margin-bottom:20px; color: var(--primary-color);">Edit Data Penghuni</h4>
@@ -522,7 +531,7 @@ function renderDatabaseForm(contentArea, data) {
                     </div>
 
                     <label for="form-whatsapp">Nomor WhatsApp:</label>
-                    <input type="tel" id="form-whatsapp" name="whatsapp" value="${data.whatsapp || ''}" placeholder="Contoh: 081234567890">
+                    <input type="tel" id="form-whatsapp" name="whatsapp" value="${data.whatsapp || ''}" placeholder="Contoh: 81234567890">
                     
                     <label for="form-ttl">Tempat, Tanggal Lahir:</label>
                     <input type="text" id="form-ttl" name="ttl" value="${data.ttl || ''}" placeholder="Contoh: Jakarta, 17 Agustus 1990">
@@ -537,18 +546,233 @@ function renderDatabaseForm(contentArea, data) {
                         <option value="Bekerja" ${data.status === 'Bekerja' ? 'selected' : ''}>Bekerja</option>
                         <option value="Lainnya" ${data.status === 'Lainnya' ? 'selected' : ''}>Lainnya</option>
                     </select>
+                    <hr style="margin: 25px 0;">
 
-                    <label for="form-nominal">Nominal Pembayaran (Rp):</label>
-                    <input type="text" id="form-nominal" name="nominal" value="${data.nominal || ''}" required>
+                    <label for="form-nominal-select">Nominal Pembayaran (Rp):</label>
+                    <p style="font-size: 0.8em; color: #f39c12; margin-top: -2px; margin-bottom: 8px;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Nominal yang tertera adalah Bulanan (perbulan!)</span>
+                    </p>
+                    <select id="form-nominal-select" required>
+                        <option value="" disabled ${!data.nominal ? 'selected' : ''}>-- Pilih Nominal (Perbulan)--</option>
+                        <option value="325000" ${data.nominal == 325000 ? 'selected' : ''}>Rp 325.000</option>
+                        <option value="350000" ${data.nominal == 350000 ? 'selected' : ''}>Rp 350.000</option>
+                        <option value="375000" ${data.nominal == 375000 ? 'selected' : ''}>Rp 375.000</option>
+                        <option value="400000" ${data.nominal == 400000 ? 'selected' : ''}>Rp 400.000</option>
+                        <option value="lainnya" ${isNominalLainnya ? 'selected' : ''}>Lainnya</option>
+                    </select>
+                    <div id="form-nominal-lainnya-container" style="display: ${isNominalLainnya ? 'block' : 'none'}; margin-top: 10px;">
+                        <label for="form-nominal-lainnya">Masukkan Nominal Lainnya (Rp):</label>
+                        <input type="text" id="form-nominal-lainnya" value="${isNominalLainnya ? data.nominal : ''}" placeholder="Contoh: 500000">
+                    </div>
+                    <input type="hidden" id="form-nominal" name="nominal" value="${data.nominal || '325000'}">
 
                     <label for="form-jatuh-tempo">Jatuh Tempo:</label>
                     <input type="date" id="form-jatuh-tempo" name="jatuhTempo" value="${jatuhTempoValue}" required>
+                    <p style="font-size: 0.8em; color: #f39c12; margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Secara otomatis merubah status pembayaran berdasarkan tanggal jatuh tempo.</span>
+                    </p>
 
                     <div class="form-actions">
                         <button type="submit" class="form-btn">Simpan Perubahan</button>
                         <button type="button" id="form-cancel-btn" class="form-btn cancel">Batal</button>
                     </div>
                 </form>`;
+            
+            // --- LOGIKA UNTUK DROPDOWN NOMINAL ---
+            const nominalSelect = document.getElementById('form-nominal-select');
+            const nominalLainnyaContainer = document.getElementById('form-nominal-lainnya-container');
+            const nominalLainnyaInput = document.getElementById('form-nominal-lainnya');
+            const nominalHiddenInput = document.getElementById('form-nominal');
+
+            if (nominalSelect) nominalSelect.value = '';
+    if (nominalLainnyaContainer) nominalLainnyaContainer.style.display = 'none';
+    if (nominalLainnyaInput) nominalLainnyaInput.value = '';
+    if (nominalHiddenInput) nominalHiddenInput.value = '';
+
+            const updateNominal = () => {
+                if (nominalSelect.value === 'lainnya') {
+                    nominalLainnyaContainer.style.display = 'block';
+                    nominalHiddenInput.value = nominalLainnyaInput.value.replace(/[^0-9]/g, '');
+                } else {
+                    nominalLainnyaContainer.style.display = 'none';
+                    nominalHiddenInput.value = nominalSelect.value;
+                }
+            };
+
+            nominalSelect.addEventListener('change', updateNominal);
+            nominalLainnyaInput.addEventListener('input', () => {
+                // Hanya update jika opsi "Lainnya" yang dipilih
+                if (nominalSelect.value === 'lainnya') {
+                    nominalHiddenInput.value = nominalLainnyaInput.value.replace(/[^0-9]/g, '');
+                }
+            });
+            
+            // Validasi input NIK agar hanya angka
+            const nikInput = document.getElementById('form-nik');
+            if(nikInput) {
+                nikInput.addEventListener('input', () => {
+                    nikInput.value = nikInput.value.replace(/[^0-9]/g, '');
+                });
+            }
+
+            document.getElementById('form-cancel-btn').addEventListener('click', () => renderDatabaseContent(contentArea));
+        }
+    };
+    
+    // Logika untuk tombol toggle (tidak perlu diubah)
+    const konfirmasiBtns = document.querySelectorAll('.konfirmasi-btn');
+    konfirmasiBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            konfirmasiBtns.forEach(b => b.classList.remove('active-status'));
+            e.currentTarget.classList.add('active-status');
+            renderFormContent(e.currentTarget.dataset.status);
+        });
+    });
+    
+    renderFormContent(initialStatus);
+}
+
+/**
+ * Menangani proses pengiriman data form ke Google Apps Script.
+ */
+// GANTIKAN FUNGSI LAMA DENGAN YANG INI DI script.js
+function renderDatabaseForm(contentArea, data) {
+    const initialStatus = data.nama ? 'Tidak Tersedia' : 'Tersedia';
+
+    const formHtml = `
+        <div class="database-form-container">
+            <h3 style="text-align: center; font-size: 1.5em; margin-bottom: 25px;">Edit Status Kamar ${data.kamar}</h3>
+            <div class="konfirmasi-actions">
+                <button type="button" class="konfirmasi-btn tidak-tersedia ${initialStatus === 'Tidak Tersedia' ? 'active-status' : ''}" data-status="Tidak Tersedia">Ada Penghuni</button>
+                <button type="button" class="konfirmasi-btn destructive-btn ${initialStatus === 'Tersedia' ? 'active-status' : ''}" data-status="Tersedia">Tidak Ada Penghuni</button>
+            </div>
+            <div id="dynamic-form-content" style="margin-top: 30px;"></div>
+        </div>`;
+    contentArea.innerHTML = formHtml;
+
+    const renderFormContent = (status) => {
+        const container = document.getElementById('dynamic-form-content');
+        if (status === 'Tersedia') {
+            // Bagian untuk mengosongkan kamar (tidak perlu diubah)
+            container.innerHTML = `
+                <div class="empty-state-card" style="margin-top: 0; padding: 30px; border: 2px dashed #e74c3c; box-shadow: none;">
+                    <i class="fas fa-exclamation-triangle icon" style="font-size: 3.5em; color: #e74c3c;"></i>
+                    <h4 class="title" style="font-size: 1.6em; color: #c0392b;">Konfirmasi Pengosongan Kamar</h4>
+                    <p class="message" style="max-width: 350px; margin: 10px auto;">Anda akan menghapus semua data penghuni. Status kamar akan diubah menjadi <strong style="color: var(--primary-color);">Tersedia</strong>.</p>
+                    <p class="message" style="font-weight: 700; color: #c0392b; margin-top:10px;">Tindakan ini tidak dapat dibatalkan.</p>
+                    <div class="form-actions" style="justify-content: center; margin-top: 25px;">
+                        <button type="button" id="apply-empty-btn" class="form-btn destructive-btn"><i class="fas fa-trash-alt"></i> Ya, Kosongkan Data</button>
+                        <button type="button" id="form-cancel-btn" class="form-btn safe-btn">Batal</button>
+                    </div>
+                </div>`;
+            
+            document.getElementById('apply-empty-btn').addEventListener('click', (e) => {
+                handleFormSubmit({ kamar: data.kamar }, true, e.currentTarget);
+            });
+            document.getElementById('form-cancel-btn').addEventListener('click', () => renderDatabaseContent(contentArea));
+
+        } else { // Status 'Tidak Tersedia' (Ada Penghuni)
+            let jatuhTempoValue = data.jatuhTempo ? new Date(data.jatuhTempo).toISOString().split('T')[0] : '';
+
+            const nominalOptions = [325000, 350000, 375000, 400000];
+            const isNominalLainnya = data.nominal && !nominalOptions.includes(Number(data.nominal));
+            const nominalLainnyaValue = (isNominalLainnya && !isNaN(Number(data.nominal))) ? data.nominal : '';
+
+            container.innerHTML = `
+                <form id="database-form" class="database-form">
+                    <h4 style="text-align:center; margin-bottom:20px; color: var(--primary-color);">Edit Data Penghuni</h4>
+                    <input type="hidden" name="kamar" value="${data.kamar || ''}">
+                    <input type="hidden" name="statusKamar" value="Tidak Tersedia">
+                    
+                    <label for="form-nama">Nama Lengkap:</label>
+                    <input type="text" id="form-nama" name="nama" value="${data.nama || ''}" required>
+
+                    <label for="form-nik">NIK KTP (16 Angka):</label>
+                    <input type="text" id="form-nik" name="nik" value="${data.nik || ''}" maxlength="16" pattern="[0-9]{16}" title="Harus 16 digit angka">
+
+                    <label class="label">Upload ID:</label>
+                    <div class="custom-file-upload-container">
+                        <button type="button" class="custom-file-btn" onclick="openUploadModal('${data.kamar}')">
+                            <i class="fas fa-upload"></i> Pilih File
+                        </button>
+                          <span class="custom-file-text">${data.FileLink ? 'File sudah terunggah' : 'Belum ada file dipilih'}</span>
+                    </div>
+
+                    <label for="form-whatsapp">Nomor WhatsApp:</label>
+                    <input type="tel" id="form-whatsapp" name="whatsapp" value="${data.whatsapp || ''}" placeholder="Contoh: 81234567890">
+                    
+                    <label for="form-ttl">Tempat, Tanggal Lahir:</label>
+                    <input type="text" id="form-ttl" name="ttl" value="${data.ttl || ''}" placeholder="Contoh: Jakarta, 17 Agustus 1990">
+                    
+                    <label for="form-alamat">Alamat Asal:</label>
+                    <input type="text" id="form-alamat" name="alamat" value="${data.alamat || ''}" placeholder="Sesuai KTP">
+                    
+                    <label for="form-status">Status:</label>
+                    <select id="form-status" name="status" required>
+                        <option value="">-- Pilih Status --</option>
+                        <option value="Mahasiswa" ${data.status === 'Mahasiswa' ? 'selected' : ''}>Mahasiswa</option>
+                        <option value="Bekerja" ${data.status === 'Bekerja' ? 'selected' : ''}>Bekerja</option>
+                        <option value="Lainnya" ${data.status === 'Lainnya' ? 'selected' : ''}>Lainnya</option>
+                    </select>
+                    <hr style="margin: 25px 0;">
+
+                    <label for="form-nominal-select">Nominal Pembayaran (Rp):</label>
+                    <p style="font-size: 0.8em; color: #f39c12; margin-top: -2px; margin-bottom: 8px;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span><span>Nominal yang tertera adalah Bulanan (perbulan!)</span>
+                    </p>
+                    <select id="form-nominal-select" required>
+                        <option value="" disabled ${!data.nominal ? 'selected' : ''}>-- Pilih Nominal (Perbulan) --</option>
+                        <option value="325000" ${data.nominal == 325000 ? 'selected' : ''}>Rp 325.000</option>
+                        <option value="350000" ${data.nominal == 350000 ? 'selected' : ''}>Rp 350.000</option>
+                        <option value="375000" ${data.nominal == 375000 ? 'selected' : ''}>Rp 375.000</option>
+                        <option value="400000" ${data.nominal == 400000 ? 'selected' : ''}>Rp 400.000</option>
+                        <option value="lainnya" ${isNominalLainnya ? 'selected' : ''}>Lainnya</option>
+                    </select>
+                    <div id="form-nominal-lainnya-container" style="display: ${isNominalLainnya ? 'block' : 'none'}; margin-top: 10px;">
+                        <label for="form-nominal-lainnya">Masukkan Nominal Lainnya (Rp):</label>
+                        <input type="text" id="form-nominal-lainnya" value="${isNominalLainnya ? data.nominal : ''}" placeholder="Contoh: 500000">
+                    </div>
+                    <input type="hidden" id="form-nominal" name="nominal" value="${data.nominal || '325000'}">
+
+                    <label for="form-jatuh-tempo">Jatuh Tempo:</label>
+                    <input type="date" id="form-jatuh-tempo" name="jatuhTempo" value="${jatuhTempoValue}" required>
+                    <p style="font-size: 0.8em; color: #f39c12; margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Secara otomatis merubah status pembayaran berdasarkan tanggal jatuh tempo.</span>
+                    </p>
+
+                    <div class="form-actions">
+                        <button type="submit" class="form-btn">Simpan Perubahan</button>
+                        <button type="button" id="form-cancel-btn" class="form-btn cancel">Batal</button>
+                    </div>
+                </form>`;
+            
+            // --- LOGIKA UNTUK DROPDOWN NOMINAL ---
+            const nominalSelect = document.getElementById('form-nominal-select');
+            const nominalLainnyaContainer = document.getElementById('form-nominal-lainnya-container');
+            const nominalLainnyaInput = document.getElementById('form-nominal-lainnya');
+            const nominalHiddenInput = document.getElementById('form-nominal');
+
+            const updateNominal = () => {
+                if (nominalSelect.value === 'lainnya') {
+                    nominalLainnyaContainer.style.display = 'block';
+                    nominalHiddenInput.value = nominalLainnyaInput.value.replace(/[^0-9]/g, '');
+                } else {
+                    nominalLainnyaContainer.style.display = 'none';
+                    nominalHiddenInput.value = nominalSelect.value;
+                }
+            };
+
+            nominalSelect.addEventListener('change', updateNominal);
+            nominalLainnyaInput.addEventListener('input', () => {
+                // Hanya update jika opsi "Lainnya" yang dipilih
+                if (nominalSelect.value === 'lainnya') {
+                    nominalHiddenInput.value = nominalLainnyaInput.value.replace(/[^0-9]/g, '');
+                }
+            });
             
             // Validasi input NIK agar hanya angka
             const nikInput = document.getElementById('form-nik');
@@ -591,45 +815,66 @@ async function handleFormSubmit(eventOrData, isEmptying = false, buttonEl = null
     }
 
     try {
-        const formData = new FormData();
-        formData.append('action', 'update'); // Action untuk Google Script
-        formData.append('sheet', 'penghuni'); // Nama sheet target
+        const dataToSend = { action: 'update', sheet: 'penghuni' };
+        let residentData;
 
         if (isEmptying) {
             // Logika untuk mengosongkan kamar
-            formData.append('kamar', eventOrData.kamar);
-            formData.append('nama', '');
-            formData.append('nik', '');
-            formData.append('whatsapp', '');
-            formData.append('ttl', '');
-            formData.append('alamat', '');
-            formData.append('status', '');
-            formData.append('jatuhTempo', '');
-            formData.append('nominal', '');
-            formData.append('FileLink', '');
-            formData.append('statusKamar', 'Tersedia');
+            residentData = databaseData.penghuni.find(p => p.kamar === eventOrData.kamar);
+            dataToSend.kamar = eventOrData.kamar;
+            dataToSend.nama = '';
+            dataToSend.nik = '';
+            dataToSend.whatsapp = '';
+            dataToSend.ttl = '';
+            dataToSend.alamat = '';
+            dataToSend.status = '';
+            dataToSend.jatuhTempo = '';
+            dataToSend.FileLink = '';
+            dataToSend.statusKamar = 'Tersedia';
+            dataToSend.nominal = '0';
+            dataToSend.bayarTerakhir = '';
         } else {
             // Logika untuk mengisi data penghuni dari form
             const form = eventOrData.target;
+            residentData = databaseData.penghuni.find(p => p.kamar === form.querySelector('[name="kamar"]').value);
 
             // Ambil semua data dari form
-            formData.append('kamar', form.querySelector('[name="kamar"]').value);
-            formData.append('nama', form.querySelector('[name="nama"]').value);
-            formData.append('nik', form.querySelector('[name="nik"]').value);
-            formData.append('whatsapp', form.querySelector('[name="whatsapp"]').value);
-            formData.append('ttl', form.querySelector('[name="ttl"]').value);
-            formData.append('alamat', form.querySelector('[name="alamat"]').value);
-            formData.append('status', form.querySelector('[name="status"]').value);
-            formData.append('jatuhTempo', form.querySelector('[name="jatuhTempo"]').value);
-            formData.append('nominal', form.querySelector('[name="nominal"]').value);
-            formData.append('statusKamar', form.querySelector('[name="statusKamar"]').value);
-
+            dataToSend.kamar = form.querySelector('[name="kamar"]').value;
+            dataToSend.nama = form.querySelector('[name="nama"]').value;
+            dataToSend.nik = form.querySelector('[name="nik"]').value;
+            dataToSend.whatsapp = form.querySelector('[name="whatsapp"]').value;
+            dataToSend.ttl = form.querySelector('[name="ttl"]').value;
+            dataToSend.alamat = form.querySelector('[name="alamat"]').value;
+            dataToSend.status = form.querySelector('[name="status"]').value;
+            dataToSend.jatuhTempo = form.querySelector('[name="jatuhTempo"]').value;
+            dataToSend.nominal = form.querySelector('[name="nominal"]').value;
+            dataToSend.statusKamar = form.querySelector('[name="statusKamar"]').value;
+            // Penting: Gunakan data.bayarTerakhir dari residentData jika tidak ada perubahan
+            dataToSend.bayarTerakhir = residentData.bayarTerakhir || '';
         }
-        
+
+        // --- LOKASI LOGIKA PEMBAYARAN TERAKHIR YANG BENAR ---
+        // Logika ini akan dijalankan setelah semua data dari form atau pengosongan terkumpul
+        if (!isEmptying && residentData && dataToSend.statusKamar === 'Tidak Tersedia') {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const jatuhTempoString = dataToSend.jatuhTempo;
+            const parts = jatuhTempoString.split('-');
+            const jatuhTempoDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+
+            if (jatuhTempoDate >= today) {
+                dataToSend.bayarTerakhir = new Date().toISOString().split('T')[0];
+            } else {
+                dataToSend.bayarTerakhir = residentData.bayarTerakhir || '';
+            }
+        }
+        // --- AKHIR LOGIKA PEMBAYARAN TERAKHIR ---
+                
         // Kirim data ke API
         const response = await fetch(API_URL, {
             method: 'POST',
-            body: formData, // Langsung kirim objek FormData
+            body: new URLSearchParams(dataToSend),
         });
 
         const result = await response.json();
@@ -775,6 +1020,16 @@ function formatDate(dateString) {
         return dateString; // Kembalikan apa adanya jika format tidak dikenali
     }
     return date.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+function getIndonesianDayOfWeek(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    if (isNaN(date)) {
+        return '';
+    }
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    return days[date.getDay()];
 }
 
 
@@ -949,7 +1204,7 @@ async function renderDatabaseContent(contentArea) {
                         <div class="database-detail-item"><span>Jumlah Pembayaran</span><span class="database-value">Rp ${formatRupiah(data.nominal || '0')}</span></div>
                         <div class="database-detail-item"><span>Status Pembayaran</span><span class="database-value ${statusSewaClass}"><i class="${statusSewaIcon}"></i> ${statusSewa}</span></div>
                         <div class="database-detail-item"><span>Jatuh Tempo</span><span class="database-value">${formatDate(data.jatuhTempo)}</span></div>
-                        
+                        <div class="database-detail-item"><span>Pembayaran Terakhir</span><span class="database-value" style="color: #f39c12;">${formatDate(data.bayarTerakhir)}</span></div>
                         <hr style="border: none; height: 1px; background-image: linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,0.1), rgba(0,0,0,0)); margin: 15px 0;">
 
                         <div class="database-detail-item"><span>Tagihan Listrik</span><span class="database-value">${tagihanListrikHtml}</span></div>
@@ -959,7 +1214,6 @@ async function renderDatabaseContent(contentArea) {
                         <div class="database-detail-item"><span>Status Kamar</span><span class="database-value status-tidak-tersedia"><i class="fas fa-times-circle"></i> ${data.statusKamar}</span></div>
                         
                         <div class="card-actions">
-                            <button class="form-btn status-btn" data-kamar="${data.kamar}"><i class="fas fa-info-circle"></i> Status</button>
                             <button class="form-btn generate-btn" data-nama="${data.nama}" data-kamar="${data.kamar}" data-nominal="${data.nominal}" data-jatuh-tempo="${data.jatuhTempo}" data-whatsapp="${data.whatsapp || ''}"><i class="fas fa-receipt"></i> e-Kwitansi</button>
                             <button class="form-btn reminder-btn" data-nama="${data.nama}" data-kamar="${data.kamar}" data-nominal="${data.nominal}" data-jatuh-tempo="${data.jatuhTempo}" data-whatsapp="${data.whatsapp || ''}"><i class="fas fa-bell"></i></button>
                             <button class="form-btn edit-btn" data-kamar="${data.kamar}"><i class="fas fa-edit"></i> Edit</button>
@@ -1089,6 +1343,7 @@ async function renderViewOnlyDatabase(contentArea) {
                             
                             <div class="database-detail-item"><span>Jatuh Tempo Sewa</span><span class="database-value">${formatDate(data.jatuhTempo)}</span></div>
                             <div class="database-detail-item"><span>Status Pembayaran Sewa</span><span class="database-value ${statusSewaClass}"><i class="${statusSewaIcon}"></i> ${statusSewa}</span></div>
+                            <div class="database-detail-item"><span>Pembayaran Terakhir</span><span class="database-value" style="color: #f39c12;">${formatDate(data.bayarTerakhir)}</span></div>
                             
                             <hr style="border: none; height: 1px; background-image: linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,0.1), rgba(0,0,0,0)); margin: 15px 0;">
 
@@ -1172,6 +1427,7 @@ async function renderViewOnlyRooms(contentArea) {
                             <h4 class="room-number">Kamar ${roomNumber}</h4>
                         </div>
                         <p class="room-status"><i class="fas fa-times-circle"></i>Dihuni oleh: ${roomData.nama}</p>
+                        <p class="room-status"><i class="fas fa-calendar-alt"></i>Jatuh Tempo: <span style="color: #f39c12;"> ${formatDate(roomData.jatuhTempo)}</span></p>
                     </div>`;
             } else {
                 // Tampilan untuk kamar yang tersedia
@@ -1203,9 +1459,6 @@ async function renderViewOnlyRooms(contentArea) {
 }
 
 
-// ===============================================
-// ============== DAFTAR VIEW ONLY DATABASE ===============
-// ===============================================
 // ===============================================
 // ============== DAFTAR VIEW ONLY DATABASE ===============
 // ===============================================
@@ -1306,6 +1559,7 @@ async function renderViewOnlyDatabase(contentArea) {
 
                             <div class="database-detail-item"><span>Jatuh Tempo Sewa</span><span class="database-value">${formatDate(data.jatuhTempo)}</span></div>
                             <div class="database-detail-item"><span>Status Pembayaran Sewa</span><span class="database-value ${statusSewaClass}"><i class="${statusSewaIcon}"></i> ${statusSewa}</span></div>
+                            <div class="database-detail-item"><span>Pembayaran Terakhir</span><span class="database-value" style="color: #f39c12;">${formatDate(data.bayarTerakhir)}</span></div>
 
                             <hr style="border: none; height: 1px; background-image: linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,0.1), rgba(0,0,0,0)); margin: 15px 0;">
 
@@ -1749,26 +2003,50 @@ function buildTableRows(data) {
 }
 
 
-// Fungsi baru untuk menampilkan modal ID Upload
+/**
+ * Menampilkan modal dengan pratinjau gambar dari Google Drive.
+ * @param {string} imageUrl - URL asli dari Google Drive yang disimpan di spreadsheet.
+ */
 function showIdModal(imageUrl) {
+    // 1. Validasi
+    if (!imageUrl || imageUrl.trim() === '-' || !imageUrl.includes('drive.google.com')) {
+        showCustomAlert("Tidak ada file ID yang valid untuk ditampilkan.");
+        return;
+    }
+
+    // 2. Ekstrak ID file dari URL Google Drive
+    let fileId = null;
+    try {
+        const urlParams = new URL(imageUrl).searchParams;
+        fileId = urlParams.get('id');
+    } catch (e) {
+        showCustomAlert("Format URL file tidak valid.");
+        return;
+    }
+
+    if (!fileId) {
+        showCustomAlert("Gagal mendapatkan ID file dari URL.");
+        return;
+    }
+
+    // 3. Buat URL baru yang menunjuk ke skrip Anda sendiri dengan aksi 'getImage'
+    const proxyImageUrl = `${API_URL}?action=getImage&id=${fileId}`;
+
+    // 4. Siapkan elemen modal
     const modal = document.getElementById('id-modal-backdrop');
-    const imagePreview = document.getElementById('id-image-preview');
-    imagePreview.src = imageUrl;
+    const iframePreview = document.getElementById('id-iframe-preview'); // Kita akan menggunakan iframe
+    const imageLink = document.getElementById('id-image-link');
+
+    // 5. Tampilkan gambar di dalam iframe
+    iframePreview.src = proxyImageUrl;
+    
+    if (imageLink) {
+        imageLink.href = imageUrl; 
+    }
     modal.classList.remove('hidden');
     modal.classList.add('show');
 }
 
-// Tambahkan event listener untuk tombol "Lihat"
-document.body.addEventListener('click', (e) => {
-    const target = e.target;
-    function showIdModal(imageUrl) {
-    const modal = document.getElementById('id-modal-backdrop');
-    const imagePreview = document.getElementById('id-image-preview');
-    imagePreview.src = imageUrl;
-    modal.classList.remove('hidden');
-    modal.classList.add('show');
-}
-});
 
 // ===============================================
 // === FUNGSI TAMBAHAN UNTUK CRUD DATA SHEET ===
@@ -1864,7 +2142,7 @@ function renderLiveChatForm(contentArea) {
                 <input type="text" id="chat-nama" name="nama" placeholder="Masukkan nama lengkap Anda" required>
                 
                 <label for="chat-whatsapp">Nomor WhatsApp:</label>
-                <input type="tel" id="chat-whatsapp" name="whatsapp" placeholder="Contoh: 081234567890" required>
+                <input type="tel" id="chat-whatsapp" name="whatsapp" placeholder="Contoh: 81234567890" required>
                 
                 <label for="chat-alamat">Alamat Asal:</label>
                 <input type="text" id="chat-alamat" name="alamat" placeholder="Contoh: Jakarta" required>

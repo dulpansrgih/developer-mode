@@ -1525,13 +1525,13 @@ body {
     gap: 15px;
 }
 
-/* GAYA FINAL: TOMBOL BIRU SOLID */
+/* === GAYA FINAL: TOMBOL GHOST DENGAN TEKS BIRU === */
 .view-id-btn {
     /* Tampilan Dasar */
-    background-color: var(--accent-color);
+    background-color: transparent;
     border: 1px solid var(--accent-color);
-    color: white; /* Warna teks putih */
-    text-decoration: none;
+    color: var(--primary-color);
+    text-decoration: none; /* TAMBAHKAN INI */
     
     /* Ukuran & Bentuk */
     padding: 3px 12px;
@@ -1546,27 +1546,29 @@ body {
 
 /* Efek saat kursor di atas tombol (dan tidak disabled) */
 .view-id-btn:hover:not(:disabled) {
-    background-color: #64b5f6; /* Warna biru lebih muda saat hover */
-    border-color: #64b5f6;
+    background-color: var(--accent-color);
+    color: white;
     transform: translateY(-2px);
     box-shadow: 0 4px 10px rgba(66, 165, 245, 0.3);
 }
 
 /* Gaya untuk tombol yang nonaktif (disabled) */
 .view-id-btn[disabled] {
-    background-color: #ccc !important;
-    border-color: #ccc !important;
-    color: #888 !important;
+    border-color: #ccc;
+    color: #ccc;
     cursor: not-allowed;
     opacity: 0.8;
 }
 
-/* Pastikan tidak ada perubahan saat diklik */
-.view-id-btn:active {
-    background-color: var(--accent-color);
-    border-color: var(--accent-color);
-    transform: none;
-    box-shadow: none;
+/* Tambahan: Pastikan tombol dinonaktifkan di HTML juga memiliki style yang sama */
+.disabled-btn {
+    border-color: #ccc !important;
+    color: #ccc !important;
+    cursor: not-allowed !important;
+    opacity: 0.6;
+    background-color: #f5f5f5 !important;
+    box-shadow: none !important;
+    transform: none !important;
 }
 
 .upload-file-text {
@@ -1629,4 +1631,3 @@ body {
     align-items: center;
     gap: 8px;
 }
-
