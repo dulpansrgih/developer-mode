@@ -210,8 +210,14 @@ document.body.addEventListener('click', (e) => {
     }
     // --- PERBAIKAN PENTING ---
     // Dibuat lebih spesifik agar tidak konflik
-    else if (target.closest('.database-card .edit-btn')) { 
-        handleEditClick(target.closest('.edit-btn')); 
+    else if (target.closest('.database-card .edit-btn')) {
+        // Cek apakah halaman saat ini adalah 'tagihan-listrik'
+        if (currentPageId === 'tagihan-listrik') {
+            // Biarkan listener lokal di `renderFilteredElectricityBills` yang menanganinya
+            return; 
+        }
+        // Jika bukan halaman iuran listrik, panggil fungsi aslinya
+        handleEditClick(target.closest('.edit-btn'));
     }
     else if (target.closest('#generate-kuitansi-btn')) {
         handleGenerateKuitansi(e);
@@ -846,7 +852,7 @@ async function handleFormSubmit(eventOrData, isEmptying = false, buttonEl = null
         const dataToSend = { action: 'update', sheet: 'penghuni' };
         let residentData;
         if (isEmptying) {
-            // --- BLOK PENGOSONGAN DATA YANG SUDAH DIPERBAIKI ---
+            // ... (kode pengosongan data tidak perlu diubah)
             dataToSend.kamar = eventOrData.kamar;
             dataToSend.nama = '';
             dataToSend.nik = '';
@@ -862,10 +868,13 @@ async function handleFormSubmit(eventOrData, isEmptying = false, buttonEl = null
             dataToSend.iuranListrik = '0';
             dataToSend.statusTagihan = '';
             dataToSend.jumlahBulan = '0';
-            // --- AKHIR BLOK PERBAIKAN ---
+            dataToSend.isNewResident = false; // Set ke false untuk kamar kosong
         } else {
             const form = eventOrData.target;
-            residentData = databaseData.penghuni.find(p => p.kamar === form.querySelector('[name="kamar"]').value);
+            const residentData = databaseData.penghuni.find(p => p.kamar === form.querySelector('[name="kamar"]').value);
+            // Cek apakah data penghuni sudah ada sebelumnya di databaseData
+            const isNewResident = !residentData || !residentData.nama;
+
             dataToSend.kamar = form.querySelector('[name="kamar"]').value;
             dataToSend.nama = form.querySelector('[name="nama"]').value;
             dataToSend.nik = form.querySelector('[name="nik"]').value;
@@ -876,24 +885,23 @@ async function handleFormSubmit(eventOrData, isEmptying = false, buttonEl = null
             dataToSend.jatuhTempo = form.querySelector('[name="jatuhTempo"]').value;
             dataToSend.nominal = form.querySelector('[name="nominal"]').value;
             dataToSend.statusKamar = form.querySelector('[name="statusKamar"]').value;
-            dataToSend.bayarTerakhir = residentData.bayarTerakhir || '';
-            // Pastikan data iuran listrik juga terkirim
-            dataToSend.iuranListrik = residentData.iuranListrik || '';
-            dataToSend.statusTagihan = residentData.statusTagihan || '';
-            dataToSend.jumlahBulan = residentData.jumlahBulan || '';
-        }
-        if (!isEmptying && residentData && dataToSend.statusKamar === 'Tidak Tersedia') {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const jatuhTempoString = dataToSend.jatuhTempo;
-            const parts = jatuhTempoString.split('-');
-            const jatuhTempoDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-            if (jatuhTempoDate >= today) {
+
+            // Tambahkan properti khusus untuk menandai pengguna baru
+            if (isNewResident) {
                 dataToSend.bayarTerakhir = new Date().toISOString().split('T')[0];
+                dataToSend.iuranListrik = 0;
+                dataToSend.statusTagihan = 'Lunas';
+                dataToSend.jumlahBulan = 0;
+                dataToSend.isNewResident = true; // Penting: Tambahkan flag ini
             } else {
                 dataToSend.bayarTerakhir = residentData.bayarTerakhir || '';
+                dataToSend.iuranListrik = residentData.iuranListrik || '';
+                dataToSend.statusTagihan = residentData.statusTagihan || '';
+                dataToSend.jumlahBulan = residentData.jumlahBulan || '';
+                dataToSend.isNewResident = false; // Pastikan flag-nya false
             }
         }
+
         const response = await fetch(API_URL, {
             method: 'POST',
             body: new URLSearchParams(dataToSend),
@@ -903,6 +911,7 @@ async function handleFormSubmit(eventOrData, isEmptying = false, buttonEl = null
             throw new Error(result.message || 'Terjadi kesalahan di server.');
         }
         showCustomAlert(result.message || 'Data berhasil disimpan!');
+        // Panggil renderDatabaseContent untuk memuat ulang data dengan label baru
         renderDatabaseContent(document.getElementById('content-area'));
     } catch (error) {
         console.error('Error saat mengirim form:', error);
@@ -1084,7 +1093,8 @@ async function copyToClipboard(text) {
     }
 }
 
-// GANTI SELURUH FUNGSI renderDatabaseContent ANDA DENGAN INI
+// GANTI SELURUH FUNGSI renderDatabaseContent ANDA DENGAN KODE INI
+
 async function renderDatabaseContent(contentArea) {
     contentArea.innerHTML = getProgressLoaderHtml('Memuat Database Admin....');
     
@@ -1107,6 +1117,7 @@ async function renderDatabaseContent(contentArea) {
         if (!result.success || !result.data || !result.data.penghuni) {
             throw new Error(result.message || 'Gagal mengambil data dari server');
         }
+        // Perbarui data lokal dengan data terbaru dari server
         databaseData.penghuni = result.data.penghuni;
 
         let html = `
@@ -1122,6 +1133,13 @@ async function renderDatabaseContent(contentArea) {
             const isOwnerRoom = data.kamar === 'A1';
             const isAvailable = data.statusKamar === 'Tersedia';
             let cardClass = isOwnerRoom ? 'owner-room' : (isAvailable ? 'available-room' : '');
+            let newResidentLabel = '';
+
+            // LOGIKA PENTING: Cek properti `isNewResident`
+            // Properti ini dikirim dari Apps Script jika data baru ditambahkan.
+            if (data.isNewResident === true && !isAvailable) {
+                newResidentLabel = `<div class="new-resident-label">Penghuni Baru</div>`;
+            }
 
             if (isOwnerRoom) {
                 // Tampilan Kartu Pemilik (A1)
@@ -1210,6 +1228,7 @@ async function renderDatabaseContent(contentArea) {
                 
                 html += `
                     <div class="database-card ${cardClass}" data-kamar="${data.kamar}">
+                        ${newResidentLabel}
                         <h4 style="line-height: 1.3; margin-bottom: 20px;">
                             Kamar ${data.kamar} - ${data.nama}<br>
                             <span style="font-weight: normal; font-size: 0.9em;">NIK: ${data.nik || '-'}</span>
@@ -1257,7 +1276,6 @@ async function renderDatabaseContent(contentArea) {
         contentArea.innerHTML = `<div class="error-message">Gagal memuat data. Silakan coba lagi. <br><small>${error.message}</small></div>`;
     }
 }
-
 
 
 
@@ -1731,7 +1749,6 @@ async function renderFilteredElectricityBills(contentArea, filterKey) {
     }
 }
 
-// GANTI SELURUH FUNGSI renderDatabaseContent ANDA DENGAN INI
 async function renderDatabaseContent(contentArea) {
     contentArea.innerHTML = getProgressLoaderHtml('Memuat Database Admin....');
     
@@ -1754,6 +1771,7 @@ async function renderDatabaseContent(contentArea) {
         if (!result.success || !result.data || !result.data.penghuni) {
             throw new Error(result.message || 'Gagal mengambil data dari server');
         }
+        // Perbarui data lokal dengan data terbaru dari server
         databaseData.penghuni = result.data.penghuni;
 
         let html = `
@@ -1769,6 +1787,13 @@ async function renderDatabaseContent(contentArea) {
             const isOwnerRoom = data.kamar === 'A1';
             const isAvailable = data.statusKamar === 'Tersedia';
             let cardClass = isOwnerRoom ? 'owner-room' : (isAvailable ? 'available-room' : '');
+            let newResidentLabel = '';
+
+            // LOGIKA PENTING: Cek properti `isNewResident`
+            // Properti ini dikirim dari Apps Script jika data baru ditambahkan.
+            if (data.isNewResident === true && !isAvailable) {
+                newResidentLabel = `<div class="new-resident-label">Penghuni Baru</div>`;
+            }
 
             if (isOwnerRoom) {
                 // Tampilan Kartu Pemilik (A1)
@@ -1857,6 +1882,7 @@ async function renderDatabaseContent(contentArea) {
                 
                 html += `
                     <div class="database-card ${cardClass}" data-kamar="${data.kamar}">
+                        ${newResidentLabel}
                         <h4 style="line-height: 1.3; margin-bottom: 20px;">
                             Kamar ${data.kamar} - ${data.nama}<br>
                             <span style="font-weight: normal; font-size: 0.9em;">NIK: ${data.nik || '-'}</span>

@@ -193,6 +193,7 @@
     box-shadow: 0 4px 15px rgba(0,0,0,0.08);
     padding: 20px;
     margin-bottom: 20px;
+    position: relative
 }
 
 .database-card h4 {
@@ -1768,4 +1769,19 @@ body.modal-open #home-button {
     color: white; /* Warna ikon 'x' menjadi putih */
     transform: rotate(90deg) scale(1.1); /* Efek berputar dan sedikit membesar */
     border-color: #e74c3c; /* Warna border mengikuti hover */
+}
+
+.new-resident-label {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background-color: #2196f3; /* Warna biru, bisa disesuaikan */
+    color: white;
+    font-weight: bold;
+    font-size: 0.8em;
+    padding: 5px 10px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    z-index: 10;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
