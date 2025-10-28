@@ -1,51 +1,94 @@
+// =======================================================
+// === MODUL DAN ROUTING UTAMA (Global Scope) ===
+// =======================================================
+import { auth, logoutUser } from "./auth.js";
+import { renderDashboard } from "./dashboard.js";
+
+/* === ROUTING PAGES - Data Halaman Publik === */
+const pages = {
+  beranda: `
+    <section class="animate-fadeIn">
+      <h2 class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-4">Selamat Datang di Kost Bu Yani Jogja</h2>
+      <p class="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
+        Kost Bu Yani Jogja adalah hunian nyaman dengan fasilitas lengkap dan lingkungan aman,
+        cocok bagi mahasiswa dan pekerja muda yang mencari tempat tinggal strategis di Yogyakarta.
+      </p>
+    </section>`,
+    "login": `
+      <section class="animate-fadeIn max-w-sm mx-auto bg-white dark:bg-gray-800 p-6 rounded-xl shadow">
+        <h2 class="text-2xl font-semibold text-blue-600 mb-3 text-center">Masuk Admin</h2>
+        <form id="loginForm" class="space-y-3">
+          <input type="email" id="email" placeholder="Email" required class="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-400 dark:bg-gray-700">
+          <input type="password" id="password" placeholder="Kata Sandi" required class="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-400 dark:bg-gray-700">
+          <button type="submit" class="w-full bg-blue-600 text-white rounded-lg py-2 hover:bg-blue-700 transition">Masuk</button>
+        </form>
+        <div class="text-center mt-4">
+          <p class="text-sm text-gray-500 mb-2">Atau masuk dengan</p>
+          <button id="googleLoginBtn" class="w-full flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white rounded-lg py-2 transition">
+            <i data-lucide="mail"></i> Google
+          </button>
+        </div>
+        <p id="loginMessage" class="text-center text-sm mt-3"></p>
+      </section>`,
+  "data-penghuni": `
+    <section class="animate-fadeIn"><h2 class="text-xl font-semibold text-blue-600 mb-3">Data Penghuni</h2>
+    <table class="min-w-full border rounded-lg overflow-hidden">
+    <thead class="bg-blue-50 dark:bg-gray-800"><tr><th class="px-4 py-2 text-left">Nama</th><th>Kamar</th><th>Status</th></tr></thead>
+    <tbody class="divide-y divide-gray-200 dark:divide-gray-700"><tr><td class="px-4 py-2">Dulpan AS</td><td>A1</td><td class="text-green-600 font-semibold">Aktif</td></tr></tbody></table></section>`,
+  "aturan-kost": `
+    <section class="animate-fadeIn"><h2 class="text-xl font-semibold text-blue-600 mb-3">Aturan Kost</h2>
+    <ul class="list-disc pl-6 text-gray-700 dark:text-gray-300 space-y-2">
+    <li>Menjaga kebersihan lingkungan.</li><li>Pembayaran setiap tanggal 5.</li><li>Dilarang membawa tamu menginap tanpa izin.</li></ul></section>`,
+  "kontak": `
+    <section class="animate-fadeIn"><h2 class="text-xl font-semibold text-blue-600 mb-3">Kontak Pengelola</h2>
+    <p class="text-gray-700 dark:text-gray-300">📞 0812-3456-7890<br>📧 kostbuyani@gmail.com<br>📍 Yogyakarta</p></section>`,
+  "syarat": `
+    <section class="animate-fadeIn"><h2 class="text-2xl font-semibold text-blue-600 mb-3">Syarat & Ketentuan</h2>
+    <ul class="list-disc pl-6 text-gray-700 dark:text-gray-300 space-y-2">
+    <li>Pengguna wajib menjaga privasi akun.</li><li>Dilarang menyalahgunakan layanan.</li><li>Admin dapat mengubah ketentuan sewaktu-waktu.</li></ul></section>`,
+  "privasi": `
+    <section class="animate-fadeIn"><h2 class="text-2xl font-semibold text-blue-600 mb-3">Kebijakan Privasi</h2>
+    <p class="text-gray-700 dark:text-gray-300 leading-relaxed">Kami menghargai privasi pengguna. Data pribadi tidak akan dibagikan tanpa izin, kecuali untuk keperluan hukum atau operasional resmi KostBuYani.jogja.</p></section>`
+};
+
+const loadPage = (id) => {
+  const mainContent = document.getElementById("main-content");
+  mainContent.innerHTML = pages[id] || "<p class='p-6 text-gray-500'>Halaman tidak ditemukan.</p>";
+  lucide.createIcons();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+function handleRoute() {
+  const hash = location.hash.replace("#", "") || "beranda";
+  
+  if (hash === "dashboard") {
+    const user = auth.currentUser;
+    if (!user) {
+      alert("⚠️ Anda tidak diberikan akses ke Dashboard. Silakan login terlebih dahulu.");
+      location.hash = "login";
+      return;
+    }
+    const main = document.getElementById("main-content");
+    main.innerHTML = renderDashboard(user);
+    lucide.createIcons();
+  } else {
+    loadPage(hash); 
+  }
+}
+
+// =======================================================
+// === EVENT LISTENER DAN LOGIC INIT (DOMContentLoaded Scope) ===
+// =======================================================
+
 document.addEventListener("DOMContentLoaded", () => {
   lucide.createIcons();
-
-  const sidebar = document.getElementById("sidebar");
-  const toggleSidebar = document.getElementById("toggleSidebar");
-  const closeSidebar = document.getElementById("closeSidebar");
-  const overlay = document.getElementById("overlay");
-  const themeToggle = document.getElementById("themeToggle");
-  const datetime = document.getElementById("datetime");
-
-  // Elemen Dropdown Baru
-  const dropdownPenghuni = document.getElementById("dropdown-penghuni");
-  const toggleDropdownPenghuni = document.getElementById("toggle-dropdown-penghuni");
-  const dropdownContent = dropdownPenghuni.querySelector(".dropdown-content");
-  const dropdownIcon = dropdownPenghuni.querySelector(".dropdown-icon");
-  const submenuLinks = dropdownPenghuni.querySelectorAll(".submenu-link");
   
-  // Hash untuk submenu penghuni
-  const submenuHashes = ["#data-penghuni", "#daftar-kamar", "#iuran-listrik", "#cctv-live"];
+  const themeToggle = document.getElementById("themeToggle");
 
-  // --- SIDEBAR TOGGLE ---
-  const toggle = () => {
-    sidebar.classList.toggle("-translate-x-full");
-    overlay.classList.toggle("hidden");
-  };
-  toggleSidebar.addEventListener("click", toggle);
-  closeSidebar.addEventListener("click", toggle);
-  overlay.addEventListener("click", toggle);
-
-  // --- REAL-TIME CLOCK ---
-  setInterval(() => {
-    const now = new Date();
-    const formatter = new Intl.DateTimeFormat("id-ID", {
-      weekday: "long",
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-    datetime.textContent = formatter.format(now);
-  }, 1000);
-
-  // --- THEME SYSTEM (Tailwind darkMode: 'class') ---
-  const setTheme = (theme) => {
+  /* === THEME === */
+  const setTheme = (mode) => {
     const html = document.documentElement;
-    if (theme === "dark") {
+    if (mode === "dark") {
       html.classList.add("dark");
       themeToggle.innerHTML = '<i data-lucide="sun"></i>';
       localStorage.setItem("theme", "dark");
@@ -56,198 +99,80 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     lucide.createIcons();
   };
-
-  // Default terang, abaikan sistem
-  const savedTheme = localStorage.getItem("theme") || "light";
-  setTheme(savedTheme);
-
-  themeToggle.addEventListener("click", () => {
-    const currentTheme = document.documentElement.classList.contains("dark")
-      ? "dark"
-      : "light";
-    setTheme(currentTheme === "dark" ? "light" : "dark");
-  });
-
-  // --- DROPDOWN LOGIC ---
-  
-  // Fungsi untuk membuka/menutup dropdown
-  const toggleDropdown = (open) => {
-    if (open) {
-      dropdownContent.style.maxHeight = dropdownContent.scrollHeight + "px";
-      dropdownIcon.classList.add("rotate-180");
-    } else {
-      dropdownContent.style.maxHeight = "0px";
-      dropdownIcon.classList.remove("rotate-180");
-    }
+  const saved = localStorage.getItem("theme") || "light";
+  setTheme(saved);
+  themeToggle.onclick = () => {
+    const current = document.documentElement.classList.contains("dark") ? "dark" : "light";
+    setTheme(current === "dark" ? "light" : "dark");
   };
 
-  // Toggle saat tombol utama di klik
-  toggleDropdownPenghuni.addEventListener("click", () => {
-    const isOpen = dropdownContent.style.maxHeight !== "0px";
-    toggleDropdown(!isOpen);
-  });
+  /* === INIT ROUTING === */
+  handleRoute(); 
   
-  // Fungsi untuk menentukan apakah hash saat ini adalah submenu
-  const isSubmenuActive = (hash) => submenuHashes.includes(hash);
-
-  // --- HASH NAVIGATION & LINK ACTIVATION ---
-  const sections = document.querySelectorAll(".content-section");
-  const navLinks = document.querySelectorAll("nav a.nav-link");
-  const mainLinks = document.querySelectorAll("button.menu-main-link, a.menu-main-link");
-
-  function showSection(hash) {
-    sections.forEach((sec) => sec.classList.add("hidden"));
-    
-    let activeHash = hash;
-    // Logika khusus untuk hash beranda dan sub-link di halaman utama
-    if (hash === "#fasilitas" || hash.startsWith("#beranda")) {
-        activeHash = "#beranda";
+  /* === WAKTU REALTIME === */
+  setInterval(() => {
+    const el = document.getElementById("datetime");
+    if (el) {
+      el.textContent = new Intl.DateTimeFormat("id-ID", {
+        weekday: "long", day: "2-digit", month: "long", year: "numeric",
+        hour: "2-digit", minute: "2-digit", second: "2-digit"
+      }).format(new Date()) + " WIB";
     }
+  }, 1000);
 
-    const active = document.querySelector(activeHash);
-    if (active) {
-      active.classList.remove("hidden");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  }
+  /* === SIDEBAR EVENT HANDLERS === */
+  const rebindSidebarEvents = () => {
+    const sidebar = document.getElementById("sidebar");
+    const toggleSidebar = document.getElementById("toggleSidebar");
+    const closeSidebar = document.getElementById("closeSidebar");
+    const overlay = document.getElementById("overlay");
 
-  function updateActiveLink() {
-    let hash = location.hash || "#beranda";
+    if (!sidebar || !toggleSidebar) return;
 
-    // 1. Kontrol Dropdown
-    const isSubActive = isSubmenuActive(hash);
-    
-    // Buka dropdown jika salah satu submenu di dalamnya aktif
-    toggleDropdown(isSubActive);
-    
-    // 2. Kontrol Styling Navigasi
+    toggleSidebar.onclick = () => {
+      sidebar.classList.remove("-translate-x-full");
+      overlay.classList.remove("hidden");
+    };
 
-    // Hapus style aktif dari semua link
-    mainLinks.forEach(link => {
-        link.classList.remove(
-            "bg-blue-50",
-            "dark:bg-gray-800",
-            "text-blue-600",
-            "dark:text-blue-400"
-        );
+    closeSidebar.onclick = () => {
+      sidebar.classList.add("-translate-x-full");
+      overlay.classList.add("hidden");
+    };
+
+    overlay.onclick = () => {
+      sidebar.classList.add("-translate-x-full");
+      overlay.classList.add("hidden");
+    };
+
+    document.querySelectorAll(".menu-link, .submenu-link").forEach(link => {
+      link.addEventListener("click", (e) => {
+        e.preventDefault();
+        const id = link.getAttribute("href").replace("#", "");
+        location.hash = id;
+        sidebar.classList.add("-translate-x-full");
+        overlay.classList.add("hidden");
+      });
     });
-    submenuLinks.forEach(link => {
-         link.classList.remove(
-            "bg-blue-100", // Submenu menggunakan warna sedikit lebih gelap
-            "dark:bg-gray-700",
-            "text-blue-600",
-            "dark:text-blue-400",
-            "font-semibold"
-        );
-         link.classList.add("text-gray-700", "dark:text-gray-300"); // Reset warna teks default
-    });
-    
-    // Tentukan link utama yang harus aktif
-    let activeMainLink = null;
-    if (isSubActive) {
-      // Jika submenu aktif, aktifkan tombol utama dropdown
-      activeMainLink = toggleDropdownPenghuni;
-    } else {
-      // Jika menu utama lain aktif
-      activeMainLink = document.querySelector(`a.menu-main-link[href="${hash}"]`);
-    }
-
-    // Terapkan style aktif pada link utama
-    if (activeMainLink) {
-        activeMainLink.classList.add(
-            "bg-blue-50",
-            "dark:bg-gray-800",
-            "text-blue-600",
-            "dark:text-blue-400"
-        );
-        activeMainLink.classList.remove("text-gray-700", "dark:text-gray-300"); // Pastikan teks utama aktif
-    }
-
-    // Terapkan style aktif pada submenu
-    if (isSubActive) {
-        const activeSubmenu = document.querySelector(`a.submenu-link[href="${hash}"]`);
-        if (activeSubmenu) {
-            activeSubmenu.classList.add(
-                "bg-blue-100",
-                "dark:bg-gray-700",
-                "text-blue-600",
-                "dark:text-blue-400",
-                "font-semibold"
-            );
-            activeSubmenu.classList.remove("text-gray-700", "dark:text-gray-300");
-        }
-    }
-  }
-
-  window.addEventListener("hashchange", () => {
-      showSection(location.hash);
-      updateActiveLink();
-  });
-  
-  // Panggil saat DOMContentLoaded
-  showSection(location.hash || "#beranda");
-  updateActiveLink();
-});
-
-// --- POPUP DEVELOPER MODAL ---
-const devModal = document.getElementById("devModal");
-const btnDev = document.getElementById("btn-dev-info");
-const closeDevModal = document.getElementById("closeDevModal");
-const devDate = document.getElementById("dev-date");
-
-let devClockInterval;
-
-btnDev.addEventListener("click", () => {
-  // Tampilkan modal
-  devModal.classList.remove("hidden");
-  lucide.createIcons();
-
-  // Jalankan jam real-time di dalam modal
-  if (devClockInterval) clearInterval(devClockInterval);
-  const updateDevTime = () => {
-    const now = new Date();
-    const formatted = new Intl.DateTimeFormat("id-ID", {
-      weekday: "long",
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    }).format(now);
-    devDate.textContent = `${formatted} WIB`;
   };
-  updateDevTime();
-  devClockInterval = setInterval(updateDevTime, 1000);
-});
 
-// Tutup modal (klik X)
-closeDevModal.addEventListener("click", () => {
-  devModal.classList.add("hidden");
-  clearInterval(devClockInterval);
-});
+  setTimeout(rebindSidebarEvents, 200);
 
-// Tutup modal bila klik di luar
-devModal.addEventListener("click", (e) => {
-  if (e.target === devModal) {
-    devModal.classList.add("hidden");
-    clearInterval(devClockInterval);
+  /* === TOMBOL ADMIN/LOGIN === */
+  const adminButton = document.getElementById("adminButton");
+  if (adminButton) {
+    adminButton.onclick = () => {
+      const user = auth.currentUser;
+      location.hash = user ? "dashboard" : "login";
+    };
   }
 });
 
-// --- NAVIGASI HEADER: PENGUMUMAN & ADMIN ---
-const notifButton = document.getElementById("notifButton");
-const adminButton = document.getElementById("adminButton");
+// Event listener untuk hashchange
+window.addEventListener("hashchange", handleRoute);
 
-if (notifButton) {
-  notifButton.addEventListener("click", () => {
-    location.hash = "#pengumuman";
-  });
-}
-
-if (adminButton) {
-  adminButton.addEventListener("click", () => {
-    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-    location.hash = isLoggedIn ? "#dashboard" : "#login";
-  });
-}
+// Tombol logout (untuk dropdown di header)
+document.addEventListener("click", async (e) => {
+  if (e.target.id === "logoutBtn" || e.target.id === "logoutBtnHeader") {
+    await logoutUser();
+  }
+});

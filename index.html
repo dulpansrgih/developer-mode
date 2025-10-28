@@ -4,408 +4,53 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>KostBuYani.jogja</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
-  tailwind.config = {
-    darkMode: 'class',
-    theme: {
-      extend: {
-        colors: {
-          primary: '#3b82f6',
-          dark: {
-            bg: '#0d1117',          // background utama
-            card: '#161b22',        // kontainer / kartu
-            border: '#1f2937',      // garis batas
-            hover: '#21262d',       // hover lembut
-            text: '#e6edf3',        // teks utama
-            subtext: '#9ca3af',     // teks sekunder
-            accent: '#58a6ff'       // biru aksen lembut
-          },
-        },
-      },
-    },
-  };
-</script>
-
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { colors: { primary: '#3b82f6' } } },
+    }
+  </script>
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 
-<body class="bg-gray-50 text-gray-800 dark:bg-dark-bg dark:text-dark-text transition-colors duration-300">
+<body class="bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300">
+  <!-- Overlay -->
+  <div id="overlay" class="fixed inset-0 bg-black/40 hidden z-[80] transition-opacity duration-300"></div>
 
-  <div id="overlay" class="fixed inset-0 bg-black bg-opacity-40 hidden z-30 transition-opacity duration-300"></div>
-
-  <aside id="sidebar"
-    class="fixed top-0 left-0 w-[45%] max-w-md h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transform -translate-x-full transition-transform duration-300 ease-in-out z-40 flex flex-col justify-between shadow-lg">
-    
-    <div class="flex flex-col overflow-y-auto">
-      <div class="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-800">
-        <p id="datetime" class="text-sm text-gray-500 dark:text-gray-400">Memuat waktu...</p>
-        <button id="closeSidebar" class="text-gray-600 dark:text-gray-300 hover:text-blue-600">
-          <i data-lucide="x"></i>
-        </button>
-      </div>
-
-      <nav class="p-4 space-y-2 font-medium">
-        <a href="#beranda"
-          class="nav-link menu-main-link flex items-center gap-3 p-3 rounded-xl border border-transparent hover:bg-blue-50 hover:border-blue-200 dark:hover:bg-gray-800 transition">
-          <div class="p-2 bg-blue-100 dark:bg-gray-800 rounded-lg text-blue-600"><i data-lucide="home"></i></div>
-          <span>Beranda</span>
-        </a>
-
-        <div id="dropdown-penghuni" class="dropdown-menu">
-          <button id="toggle-dropdown-penghuni" class="menu-main-link flex items-center justify-between w-full p-3 rounded-xl border border-transparent hover:bg-blue-50 hover:border-blue-200 dark:hover:bg-gray-800 transition">
-            <div class="flex items-center gap-3">
-              <div class="p-2 bg-blue-100 dark:bg-gray-800 rounded-lg text-blue-600">
-                <i data-lucide="users"></i>
-              </div>
-              <span>Informasi Penghuni</span>
-            </div>
-            <i data-lucide="chevron-down" class="dropdown-icon transition-transform w-5 h-5"></i>
-          </button>
-
-          <div class="dropdown-content mt-2 space-y-1.5 overflow-hidden transition-all duration-300 ease-in-out" style="max-height: 0px;">
-            <a href="#data-penghuni" class="nav-link submenu-link flex items-center gap-3 py-2 px-3 pl-6 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-              <i data-lucide="clipboard-list" class="w-4 h-4 text-blue-500"></i> Data Penghuni
-            </a>
-            <a href="#daftar-kamar" class="nav-link submenu-link flex items-center gap-3 py-2 px-3 pl-6 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-              <i data-lucide="door-open" class="w-4 h-4 text-blue-500"></i> Daftar Kamar
-            </a>
-            <a href="#iuran-listrik" class="nav-link submenu-link flex items-center gap-3 py-2 px-3 pl-6 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-              <i data-lucide="zap" class="w-4 h-4 text-blue-500"></i> Iuran Listrik
-            </a>
-            <a href="#cctv-live" class="nav-link submenu-link flex items-center gap-3 py-2 px-3 pl-6 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-              <i data-lucide="camera" class="w-4 h-4 text-blue-500"></i> CCTV Live
-            </a>
-          </div>
-        </div>
-
-        <div class="relative py-2">
-          <div class="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-700 to-transparent"></div>
-        </div>
-        
-        <a href="#aturan-kost"
-          class="nav-link menu-main-link flex items-center gap-3 p-3 rounded-xl border border-transparent hover:bg-blue-50 hover:border-blue-200 dark:hover:bg-gray-800 transition">
-          <div class="p-2 bg-blue-100 dark:bg-gray-800 rounded-lg text-blue-600"><i data-lucide="scale"></i></div>
-          <span>Aturan Kost</span>
-        </a>
-
-        <a href="#kontak"
-          class="nav-link menu-main-link flex items-center gap-3 p-3 rounded-xl border border-transparent hover:bg-blue-50 hover:border-blue-200 dark:hover:bg-gray-800 transition">
-          <div class="p-2 bg-blue-100 dark:bg-gray-800 rounded-lg text-blue-600"><i data-lucide="phone"></i></div>
-          <span>Kontak</span>
-        </a>
-
-        <hr class="my-3 border-gray-200 dark:border-gray-800">
-
-        <a href="#syarat"
-          class="nav-link menu-main-link flex items-center gap-3 p-3 rounded-xl border border-transparent hover:bg-blue-50 hover:border-blue-200 dark:hover:bg-gray-800 transition">
-          <div class="p-2 bg-blue-100 dark:bg-gray-800 rounded-lg text-blue-600"><i data-lucide="scroll"></i></div>
-          <span>Syarat & Ketentuan</span>
-        </a>
-        <a href="#privasi"
-          class="nav-link menu-main-link flex items-center gap-3 p-3 rounded-xl border border-transparent hover:bg-blue-50 hover:border-blue-200 dark:hover:bg-gray-800 transition">
-          <div class="p-2 bg-blue-100 dark:bg-gray-800 rounded-lg text-blue-600"><i data-lucide="shield"></i></div>
-          <span>Kebijakan Privasi</span>
-        </a>
-
-      </nav>
-    </div>
-
-    <div class="p-4 border-t border-gray-200 dark:border-gray-800 flex flex-col gap-3">
-      <div class="flex items-center justify-between bg-slate-100 dark:bg-slate-800 rounded-xl px-4 py-2 text-sm text-slate-600 dark:text-slate-300 shadow-inner">
-        <div class="flex items-center gap-2">
-          <i data-lucide="users" class="w-4 h-4"></i>
-          <span>Jumlah Pengunjung</span>
-        </div>
-        <span id="visitors" class="font-semibold text-slate-900 dark:text-white">1.055 orang</span>
-      </div>
-
-      <div class="flex items-center justify-between gap-3 mt-4 mb-3 px-2">
-        <div class="flex items-center gap-3 min-w-0">
-          <img src="assets/dulpans-url.png" alt="Foto Profil"
-               class="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-700">
-          <div class="min-w-0">
-            <div class="text-sm font-medium leading-tight flex items-center gap-1">
-              <span class="truncate">Dulpan AS</span>
-              <svg class="w-4 h-4 inline-block align-[-2px] shrink-0"
-                   xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"
-                   aria-label="Terverifikasi" title="Terverifikasi">
-                <path fill="#1DA1F2"
-                      d="M512 197.4l-73.1-42.2 4.4-83.4-83.5-4.4L317.6 0l-61.6 62.3L194.4 0l-42.2 73.1-83.4-4.4 4.4 83.4L0 197.4l62.3 61.6L0 320.6l73.1 42.2-4.4 83.5 83.4-4.4 42.2 73.1 61.6-62.3 61.6 62.3 42.2-73.1 83.5 4.4-4.4-83.5 73.1-42.2-62.3-61.6L512 197.4z"/>
-                <path fill="#fff"
-                      d="M380.9 169.1c-9.4-9.4-24.6-9.4-33.9 0L224 292.1l-59-59c-9.4-9.4-24.6-9.4-33.9 0s-9.4 24.6 0 33.9l76 76c9.4 9.4 24.6 9.4 33.9 0l140-140c9.4-9.4 9.4-24.6 0-33.9z"/>
-              </svg>
-            </div>
-            <div class="text-xs text-slate-500 truncate">Yogyakarta, Indonesia</div>
-          </div>
-        </div>
-
-        <button id="btn-dev-info" type="button"
-                class="select-none whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium
-                       bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-sm
-                       hover:opacity-90 active:opacity-80 focus:outline-none
-                       focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400">
-          Developer
-        </button>
-      </div>
-    </div>
-  </aside>
-
-  <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm sticky top-0 z-50 transition-colors duration-300">
+  <!-- HEADER -->
+  <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm sticky top-0 z-40">
     <div class="max-w-[1024px] mx-auto flex items-center justify-between p-4">
       <div class="flex items-center space-x-3">
         <button id="toggleSidebar" class="text-gray-700 dark:text-gray-200 hover:text-blue-600 transition">
           <i data-lucide="menu"></i>
         </button>
-        <h1 class="text-lg font-semibold cursor-pointer hover:text-blue-600 transition" id="homeButton">KostBuYani.jogja</h1>
+        <a href="/" class="text-lg font-semibold hover:text-blue-600 transition">
+          KostBuYani.jogja
+        </a>
       </div>
       <div class="flex items-center space-x-4">
-        <button id="notifButton" class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-dark-hover"><i data-lucide="bell"></i></button>
-        <button id="themeToggle" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 transition"><i data-lucide="moon"></i></button>
-        <button id="adminButton" class="bg-primary text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:opacity-90">Admin</button>
+        <button id="notifButton" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 transition">
+          <i data-lucide="bell"></i>
+        </button>
+        <button id="themeToggle" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 transition">
+          <i data-lucide="moon"></i>
+        </button>
+        <button id="adminButton" class="bg-primary text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:opacity-90">
+          Admin
+        </button>
       </div>
     </div>
   </header>
 
-  <main class="max-w-[1024px] mx-auto p-6 space-y-8">
-    <div class="space-y-10">
-      
-      <section id="beranda" class="content-section space-y-12">
-        <div class="flex flex-col md:flex-row items-center gap-10 p-10 rounded-2xl bg-gradient-to-br from-white to-blue-50 dark:from-gray-900 dark:to-gray-950 shadow-sm transition-all duration-300">
-          <div class="flex-1 space-y-4">
-            <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Kost Putra Eksklusif, <span class="text-blue-600">Nyaman & Strategis</span></h2>
-            <p class="text-gray-700 dark:text-gray-300 leading-relaxed">Tempat tinggal modern untuk mahasiswa dan pekerja dengan fasilitas lengkap, keamanan 24 jam, dan lokasi strategis di pusat kota Yogyakarta.</p>
-            <div class="flex gap-4 pt-4">
-              <a href="#fasilitas" class="bg-blue-600 text-white px-5 py-2 rounded-lg font-medium hover:bg-blue-700 transition">Lihat Fasilitas</a>
-              <a href="#kontak" class="border border-gray-300 dark:border-gray-600 px-5 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">Hubungi Admin</a>
-            </div>
-          </div>
-          <div class="flex-1 flex justify-center">
-            <div class="bg-blue-50 dark:bg-gray-800 rounded-2xl p-10 w-64 h-64 flex items-center justify-center shadow-inner">
-              <i data-lucide="home" class="w-16 h-16 text-blue-600"></i>
-            </div>
-          </div>
-        </div>
+  <!-- MAIN -->
+  <main id="main-content" class="max-w-[1024px] mx-auto p-6"></main>
 
-        <div class="bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border rounded-2xl p-8 shadow-sm space-y-4">
-          <h3 class="text-2xl font-semibold flex items-center gap-2 text-gray-900 dark:text-dark-text"><i data-lucide="info" class="w-6 h-6 text-blue-600"></i> Tentang KostBuYani.jogja</h3>
-          <p class="text-gray-700 dark:text-dark-subtext leading-relaxed">KostBuYani.jogja berdiri sejak tahun 2024 dengan komitmen menyediakan hunian yang bersih, aman, dan nyaman di lingkungan yang kondusif untuk belajar maupun bekerja. Kami fokus pada kualitas layanan dan privasi setiap penghuni.</p>
-          <ul class="grid grid-cols-2 gap-3 pt-2 text-sm text-gray-600 dark:text-gray-400">
-            <li class="flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4 text-green-500"></i> Lingkungan Bersih dan Asri</li>
-            <li class="flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4 text-green-500"></i> Akses 24 Jam dengan Keamanan CCTV</li>
-            <li class="flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4 text-green-500"></i> Dekat Kampus dan Pusat Bisnis</li>
-            <li class="flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4 text-green-500"></i> Fasilitas Fully Furnished</li>
-          </ul>
-        </div>
-
-        <div id="fasilitas" class="bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border rounded-2xl p-8 shadow-sm space-y-6">
-          <h3 class="text-2xl font-semibold flex items-center gap-2 text-gray-900 dark:text-dark-text"><i data-lucide="award" class="w-6 h-6 text-yellow-600"></i> Fasilitas Unggulan</h3>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-            <div class="p-4 rounded-lg bg-blue-50 dark:bg-gray-800 border border-blue-100 dark:border-gray-700">
-              <i data-lucide="bed" class="w-6 h-6 mx-auto mb-2 text-blue-600"></i>
-              <p class="text-sm font-medium">Kamar Mandi Dalam</p>
-            </div>
-            <div class="p-4 rounded-lg bg-blue-50 dark:bg-gray-800 border border-blue-100 dark:border-gray-700">
-              <i data-lucide="wifi" class="w-6 h-6 mx-auto mb-2 text-blue-600"></i>
-              <p class="text-sm font-medium">WiFi Kecepatan Tinggi</p>
-            </div>
-            <div class="p-4 rounded-lg bg-blue-50 dark:bg-gray-800 border border-blue-100 dark:border-gray-700">
-              <i data-lucide="car" class="w-6 h-6 mx-auto mb-2 text-blue-600"></i>
-              <p class="text-sm font-medium">Parkir Motor/Mobil</p>
-            </div>
-            <div class="p-4 rounded-lg bg-blue-50 dark:bg-gray-800 border border-blue-100 dark:border-gray-700">
-              <i data-lucide="coffee" class="w-6 h-6 mx-auto mb-2 text-blue-600"></i>
-              <p class="text-sm font-medium">Dapur Bersama</p>
-            </div>
-            </div>
-          <p class="text-sm text-right text-gray-500 dark:text-gray-400">Hubungi admin untuk detail fasilitas kamar (AC/Non-AC).</p>
-        </div>
-
-        <div class="bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border rounded-2xl p-8 shadow-sm space-y-4">
-          <h3 class="text-2xl font-semibold flex items-center gap-2 text-gray-900 dark:text-dark-text"><i data-lucide="map-pin" class="w-6 h-6 text-red-600"></i> Lokasi Kami</h3>
-          <p class="text-gray-700 dark:text-dark-subtext">KostBuYani.jogja terletak di lokasi yang sangat strategis, memudahkan akses ke berbagai fasilitas umum dan kampus ternama di Yogyakarta.</p>
-          <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg text-sm text-gray-700 dark:text-gray-300">
-            <p class="font-medium mb-1">Alamat Lengkap:</p>
-            <p>Jl. Mawar Indah No. 45, Klitren, Gondokusuman, Kota Yogyakarta, DIY 55225</p>
-          </div>
-          <p class="text-sm text-gray-600 dark:text-gray-400">Dekat dengan: UGM (5 menit), UNY (8 menit), Malioboro (15 menit).</p>
-          <a href="#" target="_blank" class="text-blue-600 dark:text-blue-400 flex items-center gap-1 font-medium hover:underline pt-2">
-            <i data-lucide="external-link" class="w-4 h-4"></i> Lihat di Google Maps
-          </a>
-        </div>
-      </section>
-      
-    </div>
-  </main>
-
-  <div id="devModal" class="hidden fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/40 transition-all duration-300">
-  <div class="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 w-[90%] max-w-md rounded-2xl shadow-xl p-6 relative">
-    <button id="closeDevModal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-      <i data-lucide="x"></i>
-    </button>
-
-    <h2 class="text-center text-xl font-bold mb-2">KostBuYani<span class="text-blue-600">.jogja</span></h2>
-    <p class="text-center text-sm text-gray-500 dark:text-gray-400 mb-4">
-      KostBuYani.jogja adalah proyek penginapan digital yang dikembangkan oleh satu developer. Dukungan dan masukan Anda sangat berarti untuk keberlanjutan proyek ini.
-    </p>
-
-    <hr class="border-gray-200 dark:border-gray-700 my-4">
-
-    <div class="space-y-2 text-sm">
-      <div class="flex justify-between"><span>Hari Ini:</span><span id="dev-date"></span></div>
-      <div class="flex justify-between"><span>Terakhir Diperbarui:</span><span>21 Oktober 2025</span></div>
-      <div class="flex justify-between"><span>Rilis:</span><span>21 Maret 2024</span></div>
-    </div>
-
-    <div class="text-center mt-6">
-      <img src="assets/dulpans-url.png" alt="Foto Developer" class="w-20 h-20 rounded-full mx-auto border-4 border-blue-500 shadow-md">
-      <h3 class="font-semibold mt-2">Dulpan Adi Saragih</h3>
-      <p class="text-xs text-gray-500 dark:text-gray-400">Terima kasih atas dukungan Anda!</p>
-    </div>
-
-    <div class="flex justify-center mt-5">
-      <a href="https://dulpanadisaragih.com" target="_blank"
-        class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-medium text-sm transition">
-        <i data-lucide="user"></i> Author
-      </a>
-    </div>
-
-    <p class="text-center text-xs text-gray-400 dark:text-gray-500 mt-5">© 2024 - 2025 Dulpan Adi Saragih</p>
-  </div>
-</div>
-
-<section id="pengumuman" class="content-section hidden bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border rounded-2xl p-8 shadow-sm">
-  <h2 class="text-3xl font-semibold mb-6 text-gray-900 dark:text-dark-text">Pengumuman Terbaru</h2>
-  <p class="text-gray-600 dark:text-gray-300">Belum ada pengumuman baru saat ini. Silakan cek kembali nanti.</p>
-</section>
-
-<section id="aturan-kost" class="content-section hidden bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border rounded-2xl p-8 shadow-sm space-y-4">
-  <h2 class="text-3xl font-semibold mb-6 text-gray-900 dark:text-dark-text">Aturan Wajib KostBuYani.jogja</h2>
-  <p>Demi kenyamanan, keamanan, dan ketertiban bersama, setiap penghuni wajib mematuhi aturan berikut:</p>
-  <ul class="list-disc pl-6 space-y-3 text-gray-700 dark:text-dark-subtext leading-relaxed">
-    <li>**Kebersihan & Keteraturan:** Wajib menjaga kebersihan kamar pribadi dan area umum (dapur, ruang tamu, kamar mandi luar). Jadwal piket kebersihan umum akan diumumkan.</li>
-    <li>**Keamanan Properti:** Wajib mengunci pintu gerbang/kamar saat meninggalkan kost dan bertanggung jawab penuh atas keamanan barang pribadi.</li>
-    <li>**Waktu Bertamu:** Tamu diizinkan berkunjung hingga pukul **22.00 WIB** di ruang tamu. Tamu lawan jenis dilarang masuk ke kamar pribadi.</li>
-    <li>**Dilarang Keras:** Dilarang membawa, menyimpan, dan mengonsumsi minuman keras, narkoba, atau melakukan perjudian dan tindakan asusila di lingkungan kost.</li>
-    <li>**Penggunaan Listrik:** Penggunaan alat elektronik dengan daya listrik tinggi (seperti kompor listrik besar, heater) wajib lapor dan dapat dikenakan iuran tambahan.</li>
-  </ul>
-  <p class="pt-4 text-sm text-gray-500 dark:text-gray-400">Pelanggaran serius dapat berujung pada pemutusan sewa tanpa pengembalian uang sewa.</p>
-</section>
-
-<section id="kontak" class="content-section hidden bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border rounded-2xl p-8 shadow-sm space-y-4">
-  <h2 class="text-3xl font-semibold mb-6 text-gray-900 dark:text-dark-text">Kontak Kami</h2>
-  <p>Silakan hubungi admin kost melalui kontak di bawah ini untuk pertanyaan, pemesanan, atau informasi lebih lanjut. Kami siap melayani Anda.</p>
-  <div class="space-y-3 text-lg">
-    <div class="flex items-center gap-3 p-3 bg-blue-50 dark:bg-gray-800 rounded-lg">
-      <i data-lucide="phone" class="w-6 h-6 text-blue-600"></i>
-      <a href="tel:+6281234567890" class="text-gray-800 dark:text-gray-100 font-medium hover:text-blue-600 transition">+62 812-3456-7890 (Admin Yani)</a>
-    </div>
-    <div class="flex items-center gap-3 p-3 bg-blue-50 dark:bg-gray-800 rounded-lg">
-      <i data-lucide="mail" class="w-6 h-6 text-blue-600"></i>
-      <a href="mailto:kostbuyani.jogja@email.com" class="text-gray-800 dark:text-gray-100 font-medium hover:text-blue-600 transition">kostbuyani.jogja@email.com</a>
-    </div>
-    <div class="flex items-center gap-3 p-3 bg-blue-50 dark:bg-gray-800 rounded-lg">
-      <i data-lucide="map-pin" class="w-6 h-6 text-blue-600"></i>
-      <span class="text-gray-800 dark:text-gray-100 text-base">Jl. Mawar Indah No. 45, Yogyakarta</span>
-    </div>
-  </div>
-  <p class="pt-4 text-sm text-gray-500 dark:text-gray-400">Jam Layanan Administrasi: Senin - Sabtu, 08.00 - 20.00 WIB</p>
-</section>
-
-<section id="syarat" class="content-section hidden bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border rounded-2xl p-8 shadow-sm space-y-4">
-  <h2 class="text-3xl font-semibold mb-6 text-gray-900 dark:text-dark-text">Syarat & Ketentuan Sewa</h2>
-  <p>Sebelum melakukan pembayaran sewa, calon penghuni wajib memahami dan menyetujui poin-poin berikut:</p>
-  <ul class="list-disc pl-6 space-y-3 text-gray-700 dark:text-dark-subtext leading-relaxed">
-    <li>**Pendaftaran:** Calon penghuni wajib mengisi formulir pendaftaran lengkap dan menyerahkan salinan identitas resmi (KTP/SIM/Kartu Mahasiswa).</li>
-    <li>**Pembayaran:** Pembayaran sewa dilakukan di muka. Jatuh tempo pembayaran sewa berikutnya adalah maksimal tanggal 5 bulan berjalan.</li>
-    <li>**Pengembalian Dana:** Uang sewa yang sudah dibayarkan tidak dapat dikembalikan (non-refundable) jika penyewa memutuskan berhenti sebelum masa kontrak berakhir.</li>
-    <li>**Kunjungan Tamu:** Tamu yang menginap lebih dari 1x24 jam wajib lapor dan dikenakan biaya tambahan sesuai tarif harian yang berlaku.</li>
-    <li>**Fasilitas:** Kerusakan fasilitas kamar/umum yang disebabkan oleh kelalaian penghuni menjadi tanggung jawab penghuni terkait (wajib mengganti/memperbaiki).</li>
-  </ul>
-</section>
-
-<section id="privasi" class="content-section hidden bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border rounded-2xl p-8 shadow-sm space-y-4">
-  <h2 class="text-3xl font-semibold mb-6 text-gray-900 dark:text-dark-text">Kebijakan Privasi KostBuYani.jogja</h2>
-  <p>Kami berkomitmen melindungi dan menjaga kerahasiaan data pribadi penghuni sesuai dengan undang-undang yang berlaku.</p>
-  <h3 class="font-semibold mt-3">1. Tujuan Pengumpulan Data</h3>
-  <p>Data pribadi (nama, kontak, identitas) dikumpulkan semata-mata untuk keperluan administrasi, verifikasi identitas, dan pengelolaan keamanan properti.</p>
-  <h3 class="font-semibold mt-3">2. Keamanan dan Akses Data</h3>
-  <ul class="list-disc pl-6 space-y-3 text-gray-700 dark:text-dark-subtext leading-relaxed">
-    <li>Data disimpan secara aman dan dienkripsi di sistem digital terkelola.</li>
-    <li>Akses terhadap data dibatasi hanya untuk pengelola kost yang berwenang.</li>
-    <li>Kami tidak menjual atau menyewakan data pribadi kepada pihak ketiga untuk tujuan komersial.</li>
-  </ul>
-  <h3 class="font-semibold mt-3">3. Penghapusan Data</h3>
-  <p>Data penghuni yang telah berhenti menyewa akan disimpan selama 1 tahun untuk keperluan audit dan administrasi, setelah itu akan dihapus secara permanen.</p>
-</section>
-
-<section id="data-penghuni" class="content-section hidden bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border rounded-2xl p-8 shadow-sm">
-  <h2 class="text-3xl font-semibold mb-6">Data Penghuni Kost (Update Oktober 2025)</h2>
-  <p class="text-gray-600 dark:text-dark-subtext mb-4">Daftar ini mencakup nama inisial, kamar, dan status profesi/pendidikan penghuni aktif:</p>
-  <ul class="space-y-3 text-gray-700 dark:text-dark-subtext leading-relaxed font-mono text-sm">
-    <li>• <span class="text-blue-600 dark:text-blue-400">A.S.</span> — Kamar A1 (Mahasiswa S2)</li>
-    <li>• <span class="text-blue-600 dark:text-blue-400">B.R.</span> — Kamar A2 (Karyawan IT)</li>
-    <li>• <span class="text-blue-600 dark:text-blue-400">C.D.</span> — Kamar A3 (Karyawan Swasta)</li>
-    <li>• <span class="text-blue-600 dark:text-blue-400">D.E.</span> — Kamar A4 (Mahasiswa S1)</li>
-    <li>• <span class="text-blue-600 dark:text-blue-400">Y.P.</span> — Kamar B1 (Freelancer)</li>
-    <li>• <span class="text-blue-600 dark:text-blue-400">D.P.</span> — Kamar B2 (Karyawan Bank)</li>
-  </ul>
-  <p class="pt-4 text-sm text-gray-500 dark:text-gray-400">Total 6 dari 9 kamar terisi (66.6% okupansi).</p>
-</section>
-
-<section id="daftar-kamar" class="content-section hidden bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border rounded-2xl p-8 shadow-sm">
-  <h2 class="text-3xl font-semibold mb-6">Daftar Kamar Kost & Ketersediaan</h2>
-  <div class="grid md:grid-cols-2 gap-6">
-    <div class="p-5 border rounded-lg dark:border-dark-border bg-green-50 dark:bg-green-900/20">
-      <h3 class="font-semibold text-lg mb-2 text-green-600 flex items-center gap-2"><i data-lucide="snowflake" class="w-5 h-5"></i> Blok A (Kamar AC)</h3>
-      <p class="text-gray-700 dark:text-dark-subtext">Total Kamar: 5 Unit</p>
-      <p class="text-gray-700 dark:text-dark-subtext">Ketersediaan: **0 Kamar Kosong** (A1-A5 Terisi Penuh)</p>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Fasilitas: Kamar Mandi Dalam, Kasur Queen, Lemari 2 Pintu, AC.</p>
-    </div>
-    <div class="p-5 border rounded-lg dark:border-dark-border bg-yellow-50 dark:bg-yellow-900/20">
-      <h3 class="font-semibold text-lg mb-2 text-yellow-600 flex items-center gap-2"><i data-lucide="wind" class="w-5 h-5"></i> Blok B (Kamar Non-AC)</h3>
-      <p class="text-gray-700 dark:text-dark-subtext">Total Kamar: 4 Unit</p>
-      <p class="text-lg font-bold text-red-600 dark:text-red-400">Ketersediaan: **2 Kamar Kosong** (B3 & B4)</p>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Fasilitas: Kamar Mandi Dalam, Kasur Single, Lemari 1 Pintu, Kipas Angin.</p>
-    </div>
-  </div>
-  <p class="pt-4 text-sm text-gray-500 dark:text-gray-400">Harga sewa per bulan: Blok A mulai Rp1.800.000 | Blok B mulai Rp1.200.000.</p>
-</section>
-
-<section id="iuran-listrik" class="content-section hidden bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border rounded-2xl p-8 shadow-sm">
-  <h2 class="text-3xl font-semibold mb-6">Iuran Listrik Bulanan (Bulan Oktober 2025)</h2>
-  <p class="text-gray-600 dark:text-dark-subtext">Tagihan listrik (Rp) dihitung berdasarkan pemakaian KWh setiap kamar (sistem sub-metering).</p>
-  <div class="overflow-x-auto mt-5">
-    <table class="w-full text-sm border-collapse border border-gray-200 dark:border-dark-border min-w-full">
-      <thead class="bg-gray-100 dark:bg-dark-hover">
-        <tr>
-          <th class="p-3 text-left border-b dark:border-dark-border">Inisial</th>
-          <th class="p-3 text-left border-b dark:border-dark-border">Kamar</th>
-          <th class="p-3 text-right border-b dark:border-dark-border">Pemakaian (KWh)</th>
-          <th class="p-3 text-right border-b dark:border-dark-border">Jumlah (Rp)</th>
-          <th class="p-3 text-center border-b dark:border-dark-border">Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td class="p-3 border-t dark:border-dark-border">A.S.</td><td class="p-3 border-t dark:border-dark-border">A1</td><td class="p-3 border-t dark:border-dark-border text-right">85</td><td class="p-3 border-t dark:border-dark-border text-right">Rp 127.500</td><td class="p-3 border-t dark:border-dark-border text-center text-green-600 dark:text-green-400 font-semibold">Lunas</td></tr>
-        <tr><td class="p-3 border-t dark:border-dark-border">B.R.</td><td class="p-3 border-t dark:border-dark-border">A2</td><td class="p-3 border-t dark:border-dark-border text-right">92</td><td class="p-3 border-t dark:border-dark-border text-right">Rp 138.000</td><td class="p-3 border-t dark:border-dark-border text-center text-green-600 dark:text-green-400 font-semibold">Lunas</td></tr>
-        <tr><td class="p-3 border-t dark:border-dark-border">Y.P.</td><td class="p-3 border-t dark:border-dark-border">B1</td><td class="p-3 border-t dark:border-dark-border text-right">50</td><td class="p-3 border-t dark:border-dark-border text-right">Rp 75.000</td><td class="p-3 border-t dark:border-dark-border text-center text-yellow-600 dark:text-yellow-400 font-semibold">Pending</td></tr>
-        <tr><td class="p-3 border-t dark:border-dark-border">D.P.</td><td class="p-3 border-t dark:border-dark-border">B2</td><td class="p-3 border-t dark:border-dark-border text-right">48</td><td class="p-3 border-t dark:border-dark-border text-right">Rp 72.000</td><td class="p-3 border-t dark:border-dark-border text-center text-red-600 dark:text-red-400 font-semibold">Belum Bayar</td></tr>
-      </tbody>
-    </table>
-  </div>
-  <p class="pt-4 text-sm text-gray-500 dark:text-gray-400">Tarif per KWh: Rp1.500. Batas pembayaran iuran listrik: tanggal 20 setiap bulan.</p>
-</section>
-
-<section id="cctv-live" class="content-section hidden bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border rounded-2xl p-8 shadow-sm text-center">
-  <div class="flex flex-col items-center justify-center py-16 space-y-4">
-    <i data-lucide="alert-triangle" class="w-16 h-16 text-yellow-500 animate-pulse"></i>
-    <h2 class="text-2xl font-semibold">Fitur CCTV Live Belum Tersedia untuk Umum</h2>
-    <p class="text-gray-600 dark:text-dark-subtext">Akses CCTV terbatas hanya untuk pengelola kost dan dalam situasi darurat keamanan. Kami memprioritaskan privasi penghuni.</p>
-  </div>
-</section>
-
-
-  <script src="main.js"></script>
+  <!-- ORDER SCRIPT URUTANNYA PENTING -->
+  <script type="module" src="dashboard.js"></script>
+  <script type="module" src="auth.js"></script>
+  <script type="module" src="main.js"></script>
+  <script type="module" src="pages.js"></script>
 </body>
 </html>
