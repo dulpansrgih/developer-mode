@@ -15,20 +15,64 @@ const pages = {
       </p>
     </section>`,
     "login": `
-      <section class="animate-fadeIn max-w-sm mx-auto bg-white dark:bg-gray-800 p-6 rounded-xl shadow">
-        <h2 class="text-2xl font-semibold text-blue-600 mb-3 text-center">Masuk Admin</h2>
-        <form id="loginForm" class="space-y-3">
-          <input type="email" id="email" placeholder="Email" required class="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-400 dark:bg-gray-700">
-          <input type="password" id="password" placeholder="Kata Sandi" required class="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-400 dark:bg-gray-700">
-          <button type="submit" class="w-full bg-blue-600 text-white rounded-lg py-2 hover:bg-blue-700 transition">Masuk</button>
-        </form>
-        <div class="text-center mt-4">
-          <p class="text-sm text-gray-500 mb-2">Atau masuk dengan</p>
-          <button id="googleLoginBtn" class="w-full flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white rounded-lg py-2 transition">
-            <i data-lucide="mail"></i> Google
+      <section class="animate-fadeIn max-w-sm mx-auto">
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700">
+          <div class="text-center mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Selamat Datang</h2>
+            <p class="text-gray-600 dark:text-gray-400 mt-2">Masuk ke panel admin</p>
+          </div>
+          <form id="loginForm" class="space-y-4">
+            <div>
+              <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Email</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                  <i data-lucide="mail" class="w-5 h-5"></i>
+                </span>
+                <input type="email" id="email" placeholder="nama@email.com" required 
+                  class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 
+                  focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 
+                  dark:focus:border-blue-600 dark:bg-gray-700 transition-colors">
+              </div>
+            </div>
+            <div>
+              <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Kata Sandi</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                  <i data-lucide="lock" class="w-5 h-5"></i>
+                </span>
+                <input type="password" id="password" placeholder="Masukkan kata sandi" required 
+                  class="w-full pl-10 pr-12 py-2 rounded-lg border border-gray-300 dark:border-gray-600 
+                  focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 
+                  dark:focus:border-blue-600 dark:bg-gray-700 transition-colors">
+                <button type="button" id="togglePassword" 
+                  class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer transition-colors">
+                  <i data-lucide="eye" class="w-5 h-5"></i>
+                </button>
+              </div>
+            </div>
+            <button type="submit" 
+              class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg 
+              py-2.5 transition-colors focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800">
+              Masuk
+            </button>
+          </form>
+          <div class="relative my-6">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-gray-200 dark:border-gray-700"></div>
+            </div>
+            <div class="relative flex justify-center text-sm">
+              <span class="px-2 bg-white dark:bg-gray-800 text-gray-500">atau</span>
+            </div>
+          </div>
+          <button id="googleLoginBtn" 
+            class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-300 
+            dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 
+            dark:hover:bg-gray-700 transition-colors focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5" alt="Google">
+            <span>Masuk dengan Google</span>
           </button>
+          <p id="loginMessage" class="text-center text-sm mt-4"></p>
         </div>
-        <p id="loginMessage" class="text-center text-sm mt-3"></p>
       </section>`,
   "data-penghuni": `
     <section class="animate-fadeIn"><h2 class="text-xl font-semibold text-blue-600 mb-3">Data Penghuni</h2>
@@ -60,20 +104,32 @@ const loadPage = (id) => {
 
 function handleRoute() {
   const hash = location.hash.replace("#", "") || "beranda";
-  
+  const user = auth.currentUser;
+
+  // If user tries to open dashboard but isn't logged, redirect to home
   if (hash === "dashboard") {
-    const user = auth.currentUser;
     if (!user) {
-      alert("⚠️ Anda tidak diberikan akses ke Dashboard. Silakan login terlebih dahulu.");
-      location.hash = "login";
+      // Redirect to homepage instead of showing login hash on reload
+      location.hash = "beranda";
       return;
     }
     const main = document.getElementById("main-content");
     main.innerHTML = renderDashboard(user);
     lucide.createIcons();
-  } else {
-    loadPage(hash); 
+    return;
   }
+
+  // If already logged in, prevent showing the login page - redirect to dashboard
+  if (hash === "login") {
+    if (user) {
+      location.hash = "dashboard";
+      return;
+    }
+    loadPage("login");
+    return;
+  }
+
+  loadPage(hash);
 }
 
 // =======================================================
@@ -82,6 +138,22 @@ function handleRoute() {
 
 document.addEventListener("DOMContentLoaded", () => {
   lucide.createIcons();
+  
+  // Password visibility toggle
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('#togglePassword')) {
+      const pwdInput = document.getElementById('password');
+      const pwdIcon = e.target.closest('#togglePassword').querySelector('i');
+      if (pwdInput.type === 'password') {
+        pwdInput.type = 'text';
+        pwdIcon.setAttribute('data-lucide', 'eye-off');
+      } else {
+        pwdInput.type = 'password';
+        pwdIcon.setAttribute('data-lucide', 'eye');
+      }
+      lucide.createIcons();
+    }
+  });
   
   const themeToggle = document.getElementById("themeToggle");
 

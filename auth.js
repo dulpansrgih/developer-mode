@@ -57,7 +57,8 @@ export async function logoutUser() {
     await signOut(auth);
     document.getElementById("profileDropdown")?.remove();
     alert("Anda telah logout.");
-    location.hash = "login";
+    // go to home (clear hash) after logout instead of staying on login
+    location.hash = "";
   } catch (err) {
     alert("Gagal logout: " + err.message);
   }
@@ -130,6 +131,22 @@ watchAuth((user) => {
     // Jika belum login
     adminButton.innerHTML = "Masuk";
     adminButton.onclick = () => (location.hash = "login");
+  }
+});
+
+// Ensure hash routing is consistent with auth state on load/change
+watchAuth((user) => {
+  try {
+    const h = (location.hash || '').replace('#','');
+    if (user) {
+      // if logged in, redirect to dashboard
+      if (!h || h === 'login') location.hash = 'dashboard';
+    } else {
+      // if not logged in, clear hash
+      if (h === 'dashboard' || h === 'login') location.hash = '';
+    }
+  } catch (err) {
+    console.warn('Auth route sync error:', err);
   }
 });
 

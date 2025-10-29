@@ -17,9 +17,59 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-storage.js";
 import { auth } from "./auth.js";
 import { uploadKTPToAppsScript } from "./upID.js";
+import { showKuitansiWindow, generateWhatsAppReminder } from "./receiptRemind.js";
+export { formatCurrency };
 
 const db = getFirestore();
 const storage = getStorage();
+
+/* === HELPER FUNCTIONS === */
+function calculateMonthsBetween(startDate, endDate) {
+  const start = new Date(startDate);
+  const end = endDate ? new Date(endDate) : start;
+  
+  if (!endDate) return 1;  // If no end date, assume one month
+  
+  const yearDiff = end.getFullYear() - start.getFullYear();
+  const monthDiff = end.getMonth() - start.getMonth();
+  
+  return yearDiff * 12 + monthDiff + 1;  // Add 1 to include both start and end months
+}
+
+function formatCurrency(amount) {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(amount);
+}
+
+function calculatePaymentStatus(tanggalPembayaran, jatuhTempo) {
+  if (!jatuhTempo) return "Belum Bayar";
+  
+  const today = new Date();
+  const dueDate = new Date(jatuhTempo);
+  const paymentDate = tanggalPembayaran ? new Date(tanggalPembayaran) : null;
+  
+  // If payment is made, always show Lunas
+  if (paymentDate) {
+    return "Lunas";
+  }
+  
+  // Due date comparison
+  if (today < dueDate) {
+    // If more than 1 day before due date
+    const daysDiff = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+    if (daysDiff > 1) {
+      return "Aktif";  
+    } else {
+      return "Tenggang"; // 1 day before due
+    }
+  } else {
+    return "Belum Bayar"; // After due date
+  }
+}
 
 /* === INISIALISASI DATABASE KAMAR === */
 async function initializeKamarDatabase() {
@@ -53,63 +103,111 @@ async function initializeKamarDatabase() {
 /* === DASHBOARD UTAMA === */
 export function renderDashboard(user) {
   const html = `
-  <section class="p-6 animate-fadeIn">
-    <h2 class="text-3xl font-semibold text-blue-600 mb-4">Dashboard Admin</h2>
-    <p class="text-gray-700 dark:text-gray-300 mb-6">Halo, <b>${user.email}</b> 👋</p>
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <!-- Top Navigation Bar -->
+    <nav class="bg-white dark:bg-gray-800 shadow-md px-6 py-4">
+      <div class="flex justify-between items-center">
+        <div>
+          <h1 class="text-2xl font-bold text-blue-600 dark:text-blue-400">KPBY Admin</h1>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Kost Putri Bunda Yulia</p>
+        </div>
+        <div class="flex items-center gap-4">
+          <span class="text-gray-600 dark:text-gray-300">
+            <i data-lucide="user" class="w-4 h-4 inline-block mr-1"></i>
+            ${user.email}
+          </span>
+        </div>
+      </div>
+    </nav>
 
-    <div class="flex gap-2 mb-6 flex-wrap">
-      <button class="tab-btn active px-4 py-2 rounded-lg bg-blue-600 text-white" data-tab="penghuni">Data Penghuni</button>
-      <button class="tab-btn px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700" data-tab="pembayaran">Data Pembayaran</button>
-      <!-- Statistik ditampilkan langsung di bawah greeting, tidak sebagai tab -->
-    </div>
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-6">
+      <!-- Statistics Cards -->
+      ${renderStatistikTable()}
+      
+      <!-- Tab Navigation -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 mt-6">
+        <div class="flex gap-3 border-b border-gray-200 dark:border-gray-700 pb-3">
+          <button class="tab-btn active px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors" data-tab="penghuni">
+            <i data-lucide="users" class="w-4 h-4 inline-block mr-1"></i>
+            Data Penghuni
+          </button>
+          <button class="tab-btn px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" data-tab="pembayaran">
+            <i data-lucide="credit-card" class="w-4 h-4 inline-block mr-1"></i>
+            Data Pembayaran
+          </button>
+        </div>
 
-    ${renderStatistikTable()}
+        <!-- Tab Content -->
+        <div id="tab-content" class="mt-4">
+          ${renderPenghuniTable()}
+        </div>
+      </div>
+    </main>
+  </div>`;
 
-    <div id="tab-content" class="mt-4">
-      ${renderPenghuniTable()}
-    </div>
-  </section>`;
-
-  setTimeout(() => {
-    initializeKamarDatabase();
-    loadPenghuniData();
-    setTimeout(loadStatistik, 300);
-  }, 300);
+  (async () => {
+    await initializeKamarDatabase();
+    await Promise.all([
+      loadPenghuniData(),
+      loadStatistik()
+    ]);
+    // Create icons only once after all data is loaded
+    lucide.createIcons();
+  })();
   return html;
 }
 
 /* === TEMPLATE DATA PENGHUNI === */
 function renderPenghuniTable() {
   return `
-  <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Daftar Penghuni (31 Kamar)</h3>
-        <div class="flex gap-2">
-          <select id="filterStatus" class="px-3 py-1.5 rounded-lg border dark:bg-gray-700 text-sm">
+  <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div>
+          <h3 class="text-2xl font-bold text-gray-800 dark:text-gray-200">Daftar Penghuni</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Kelola data penghuni kost</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center">
+              <i data-lucide="search" class="h-4 w-4 text-gray-400"></i>
+            </span>
+            <input type="text" id="searchPenghuni" placeholder="Cari penghuni..." 
+              class="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 text-sm w-full md:w-64">
+          </div>
+          <select id="filterStatus" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 text-sm">
             <option value="">Semua Status</option>
             <option value="Terisi">Terisi</option>
             <option value="Kosong">Kosong</option>
           </select>
         </div>
       </div>
-    <div class="overflow-x-auto">
-      <table class="min-w-full border rounded-lg overflow-hidden">
-        <thead class="bg-blue-50 dark:bg-gray-800">
+    <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead class="bg-gray-50 dark:bg-gray-800">
           <tr>
-            <th class="px-4 py-2 text-left">No. Kamar</th>
-            <th class="px-4 py-2 text-left">Nama Penghuni</th>
-            <th class="px-4 py-2 text-left">Status</th>
-            <th class="px-4 py-2 text-left">Alamat Asal</th>
-            <th class="px-4 py-2 text-left">Kontak</th>
-            <th class="px-4 py-2 text-left">Status Kamar</th>
-            <th class="px-4 py-2 text-left">KTP</th>
-            <th class="px-4 py-2 text-left">Tagihan</th>
-            <th class="px-4 py-2 text-left">Jatuh Tempo</th>
-            <th class="px-4 py-2 text-center">Aksi</th>
+            <th class="group px-6 py-3 text-left">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">No. Kamar</span>
+                <i data-lucide="chevrons-up-down" class="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+              </div>
+            </th>
+            <th class="group px-6 py-3 text-left">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nama Penghuni</span>
+                <i data-lucide="chevrons-up-down" class="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+              </div>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Alamat</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kontak</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">KTP</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nominal/Bulan</th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Aksi</th>
           </tr>
         </thead>
-        <tbody id="penghuniTableBody" class="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
-          <tr><td colspan="8" class="text-center py-3 text-gray-500">Memuat data...</td></tr>
+        <tbody id="penghuniTableBody" class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+          <tr><td colspan="8" class="text-center py-4 text-gray-500">Memuat data...</td></tr>
         </tbody>
       </table>
     </div>
@@ -163,8 +261,8 @@ async function loadPenghuniData() {
           <td class="px-4 py-2">${data.kontak || "-"}</td>
           <td class="px-4 py-2 ${statusClass} font-semibold">${data.status}</td>
           <td class="px-4 py-2">${ktpButton}</td>
-          <td class="px-4 py-2">${data.lastTagihan && data.lastTagihan.nominal ? `Rp ${parseInt(data.lastTagihan.nominal).toLocaleString('id-ID')}` : '-'}</td>
-          <td class="px-4 py-2">${data.lastTagihan && data.lastTagihan.jatuhTempo ? new Date(data.lastTagihan.jatuhTempo).toLocaleDateString('id-ID') : '-'}</td>
+          <td class="px-4 py-2">${data.nominalPerBulan ? `Rp ${parseInt(data.nominalPerBulan).toLocaleString('id-ID')}` : '-'}</td>
+          <td class="px-4 py-2 text-center">
           <td class="px-4 py-2 text-center">
             <button class="editPenghuniBtn text-blue-600 hover:underline text-sm" data-id="${data.id}">Edit</button>
           </td>
@@ -180,29 +278,42 @@ async function loadPenghuniData() {
 /* === TEMPLATE DATA PEMBAYARAN === */
 function renderPembayaranTable() {
   return `
-  <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Data Pembayaran</h3>
-        <button id="addPembayaranBtn" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center gap-2">
-          <i data-lucide="plus-circle"></i> Tambah Pembayaran
-        </button>
+  <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div>
+          <h3 class="text-2xl font-bold text-gray-800 dark:text-gray-200">Data Pembayaran</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Kelola pembayaran penghuni</p>
+        </div>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 pl-3 flex items-center">
+            <i data-lucide="search" class="h-4 w-4 text-gray-400"></i>
+          </span>
+          <input type="text" id="searchPembayaran" placeholder="Cari pembayaran..." 
+            class="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 text-sm w-full md:w-64">
+        </div>
       </div>
-    <div class="overflow-x-auto">
-      <table class="min-w-full border rounded-lg overflow-hidden">
-        <thead class="bg-blue-50 dark:bg-gray-800">
+    <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead class="bg-gray-50 dark:bg-gray-800">
           <tr>
-            <th class="px-4 py-2 text-left">Kamar</th>
-            <th class="px-4 py-2 text-left">Nama</th>
-            <th class="px-4 py-2 text-left">Bulan</th>
-            <th class="px-4 py-2 text-left">Nominal</th>
-            <th class="px-4 py-2 text-left">Tanggal Bayar</th>
-            <th class="px-4 py-2 text-left">Jatuh Tempo</th>
-            <th class="px-4 py-2 text-left">Status</th>
-            <th class="px-4 py-2 text-center">Aksi</th>
+            <th class="group px-6 py-3 text-left">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">No. Kamar</span>
+                <i data-lucide="chevrons-up-down" class="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+              </div>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nama</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Periode</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nominal/Bulan</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Jatuh Tempo</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tanggal Bayar</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Aksi</th>
           </tr>
         </thead>
-        <tbody id="pembayaranTableBody" class="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
-          <tr><td colspan="8" class="text-center py-3 text-gray-500">Memuat data...</td></tr>
+        <tbody id="pembayaranTableBody" class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+          <tr><td colspan="9" class="text-center py-4 text-gray-500">Memuat data...</td></tr>
         </tbody>
       </table>
     </div>
@@ -211,49 +322,81 @@ function renderPembayaranTable() {
 
 /* === LOAD DATA PEMBAYARAN === */
 async function loadPembayaranData() {
-  // Populate pembayaran table from kamar.lastTagihan so it stays in-sync with penghuni
   const tbody = document.getElementById("pembayaranTableBody");
   if (!tbody) return;
-  tbody.innerHTML = `<tr><td colspan="8" class="text-center py-3 text-gray-500">Memuat data...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="9" class="text-center py-3 text-gray-500">Memuat data...</td></tr>`;
 
   try {
     const snapshot = await getDocs(collection(db, "kamar"));
     if (snapshot.empty) {
-      tbody.innerHTML = `<tr><td colspan="8" class="text-center py-3 text-gray-400">Belum ada data kamar.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9" class="text-center py-3 text-gray-400">Belum ada data pembayaran.</td></tr>`;
       return;
     }
 
     let rows = "";
     snapshot.forEach((docSnap) => {
       const k = docSnap.data();
-      if (k.lastTagihan && k.lastTagihan.bulan) {
-        const last = k.lastTagihan;
-        const statusClass = last.statusPembayaran === "Lunas" ? "text-green-600" : "text-red-600";
+      k.id = docSnap.id;
+      
+      // Only show payment data for rooms with tenants
+      if (k.status === 'Terisi' && k.namaPenghuni) {
+        const last = k.lastTagihan || {};
         const tanggalBayar = last.tanggalPembayaran ? new Date(last.tanggalPembayaran).toLocaleDateString('id-ID') : '-';
         const jatuhTempo = last.jatuhTempo ? new Date(last.jatuhTempo).toLocaleDateString('id-ID') : '-';
+        
+        // Format period display
+        const periodDisplay = last.bulanAwal && last.bulanAkhir ? 
+          `${new Date(last.bulanAwal).toLocaleDateString('id-ID', {month:'long', year:'numeric'})} - ${new Date(last.bulanAkhir).toLocaleDateString('id-ID', {month:'long', year:'numeric'})}` : 
+          'Belum diatur';
 
+        // Calculate status
+        const status = last.tanggalPembayaran ? "Lunas" : calculatePaymentStatus(last.tanggalPembayaran, last.jatuhTempo);
+        const statusClass = status === 'Lunas' ? 'text-green-600' : (status === 'Belum Bayar' ? 'text-red-600' : 'text-orange-600');
+        
         rows += `
-          <tr>
-            <td class="px-4 py-2 font-semibold">${k.namaKamar}</td>
-            <td class="px-4 py-2">${k.namaPenghuni || '-'}</td>
-            <td class="px-4 py-2">${last.bulan}</td>
-            <td class="px-4 py-2">Rp ${last.nominal ? parseInt(last.nominal).toLocaleString('id-ID') : '-'}</td>
-            <td class="px-4 py-2">${tanggalBayar}</td>
-            <td class="px-4 py-2">${jatuhTempo}</td>
-            <td class="px-4 py-2 ${statusClass} font-semibold">${last.statusPembayaran}</td>
-            <td class="px-4 py-2 text-center flex justify-center items-center gap-2">
-              <button class="editPembayaranBtn text-blue-600 hover:underline" data-kamar="${k.namaKamar}">Edit</button>
-              ${k.kontak ? `<a href="https://wa.me/${k.kontak.replace(/\D/g, '')}" target="_blank" class="text-green-600 hover:text-green-700" title="Kirim Reminder WhatsApp">
-                <i data-lucide="message-circle"></i>
-              </a>` : ''}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+            <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900 dark:text-gray-100">${k.namaKamar}</td>
+            <td class="px-6 py-4 whitespace-nowrap">${k.namaPenghuni || '-'}</td>
+            <td class="px-6 py-4">${periodDisplay}</td>
+            <td class="px-6 py-4 whitespace-nowrap">${formatCurrency(k.nominalPerBulan || 0)}</td>
+            <td class="px-6 py-4 whitespace-nowrap">${formatCurrency(last.totalTagihan || 0)}</td>
+            <td class="px-6 py-4 whitespace-nowrap">${jatuhTempo}</td>
+            <td class="px-6 py-4 whitespace-nowrap">${tanggalBayar}</td>
+            <td class="px-6 py-4 whitespace-nowrap ${statusClass} font-medium">${status}</td>
+            <td class="px-6 py-4 text-center">
+              <div class="flex justify-center items-center space-x-2">
+                ${!last.bulanAwal ? `
+                  <button class="editPembayaranBtn inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors" data-kamar="${k.id}">
+                    <i data-lucide="calendar-plus" class="w-4 h-4 mr-1"></i>
+                    Atur Periode
+                  </button>
+                ` : `
+                  <button class="editPembayaranBtn inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors" data-kamar="${k.id}">
+                    <i data-lucide="edit" class="w-4 h-4 mr-1"></i>
+                    Edit
+                  </button>
+                `}
+                ${k.kontak ? `
+                  <a href="https://wa.me/${k.kontak.replace(/\D/g, '')}" target="_blank" 
+                     class="inline-flex items-center px-2 py-1.5 text-green-600 hover:text-green-700" 
+                     title="Kirim Reminder WhatsApp">
+                    <i data-lucide="message-circle" class="w-4 h-4"></i>
+                  </a>
+                ` : ''}
+                <button class="kuitansiBtn inline-flex items-center px-2 py-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100" title="Cetak Kuitansi" data-kamar="${k.id}">
+                  <i data-lucide="receipt" class="w-4 h-4"></i>
+                </button>
+              </div>
             </td>
           </tr>`;
       }
     });
-    tbody.innerHTML = rows || `<tr><td colspan="8" class="text-center py-3 text-gray-400">Belum ada data pembayaran.</td></tr>`;
+
+    tbody.innerHTML = rows || `<tr><td colspan="9" class="text-center py-3 text-gray-400">Belum ada data pembayaran.</td></tr>`;
+    lucide.createIcons();
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="8" class="text-center text-red-500">Gagal memuat data!</td></tr>`;
-    console.error(err);
+    console.error("Error loading payment data:", err);
+    tbody.innerHTML = `<tr><td colspan="9" class="text-center py-3 text-red-500">Gagal memuat data: ${err.message}</td></tr>`;
   }
 }
 
@@ -333,13 +476,13 @@ document.addEventListener("click", async (e) => {
     const content = document.getElementById("tab-content");
     if (tab === "penghuni") {
       content.innerHTML = renderPenghuniTable();
-      setTimeout(loadPenghuniData, 300);
+      loadPenghuniData();
     } else if (tab === "pembayaran") {
       content.innerHTML = renderPembayaranTable();
-      setTimeout(loadPembayaranData, 300);
+      loadPembayaranData();
     } else if (tab === "statistik") {
       content.innerHTML = renderStatistikTable();
-      setTimeout(loadStatistik, 300);
+      loadStatistik();
     }
     lucide.createIcons();
   }
@@ -363,16 +506,48 @@ document.addEventListener("click", async (e) => {
     });
   }
 
-  // Tambah Pembayaran
-  if (e.target.id === "addPembayaranBtn" || e.target.closest("#addPembayaranBtn")) {
-    showModalTambahPembayaran();
-  }
 
   // Edit Pembayaran
   if (e.target.classList.contains("editPembayaranBtn")) {
     // If table is now rendered from kamar.lastTagihan we get kamar id from data-kamar
     const kamarId = e.target.dataset.kamar || e.target.dataset.id;
     showModalEditPembayaranFromKamar(kamarId);
+  }
+
+  // Reminder WA button (in pembayaran table)
+  if (e.target.closest && e.target.closest('.reminderBtn')) {
+    const btn = e.target.closest('.reminderBtn');
+    const kamarId = btn.dataset.kamar;
+    try {
+      const kamarDoc = await getDoc(doc(db, 'kamar', kamarId));
+      if (!kamarDoc.exists()) return alert('Data kamar tidak ditemukan.');
+      
+      const kamarData = kamarDoc.data();
+      if (!kamarData.kontak) return alert('Kontak tidak tersedia untuk kamar ini.');
+      
+      // Generate WhatsApp link with custom message
+      const reminderLink = generateWhatsAppReminder(kamarData, kamarData.lastTagihan || {});
+      window.open(reminderLink, '_blank');
+    } catch (err) {
+      console.error(err);
+      alert('Gagal membuka WhatsApp: ' + err.message);
+    }
+  }
+
+  // Kuitansi button (generate printable receipt)
+  if (e.target.closest && e.target.closest('.kuitansiBtn')) {
+    const btn = e.target.closest('.kuitansiBtn');
+    const kamarId = btn.dataset.kamar;
+    try {
+      const kamarDoc = await getDoc(doc(db, 'kamar', kamarId));
+      if (!kamarDoc.exists()) return alert('Data kamar tidak ditemukan.');
+      const k = kamarDoc.data();
+      const t = k.lastTagihan || {};
+      showKuitansiWindow(k, t);
+    } catch (err) {
+      console.error(err);
+      alert('Gagal menampilkan kuitansi: ' + err.message);
+    }
   }
 
   // Hapus Pembayaran
@@ -444,11 +619,11 @@ async function showModalEditPenghuni(kamarId) {
             <input type="text" id="kontakPenghuni" value="${data.kontak || ''}" placeholder="08xx-xxxx-xxxx" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-800">
           </div>
           <div>
-            <label class="block text-sm font-medium mb-1">Status</label>
-                <select id="statusKamar" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-800">
-                  <option value="Kosong" ${data.status === "Kosong" ? "selected" : ""}>Kosong</option>
-                  <option value="Terisi" ${data.status === "Terisi" ? "selected" : ""}>Terisi</option>
-                </select>
+            <label class="block text-sm font-medium mb-1">Nominal Pembayaran per Bulan</label>
+            <input type="number" id="nominalPerBulan" value="${data.nominalPerBulan || ''}" placeholder="Rp 0" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-800">
+          </div>
+          <div>
+            <!-- status set automatically: Terisi when name present, Kosong when empty -->
           </div>
               <div>
                 <label class="block text-sm font-medium mb-1">Status Penghuni</label>
@@ -474,9 +649,6 @@ async function showModalEditPenghuni(kamarId) {
             <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2">Simpan Perubahan</button>
             <button type="button" id="kosongkanKamarBtn" class="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-lg py-2">Kosongkan Kamar</button>
           </div>
-          ${data.kontak ? `<a href="https://wa.me/${data.kontak.replace(/\D/g, '')}" target="_blank" class="mt-2 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white rounded-lg py-2 w-full">
-            <i data-lucide="message-circle"></i> Kirim Reminder WhatsApp
-          </a>` : ''}
         </form>
         <button id="closeModal" class="absolute top-3 right-3 text-gray-500 hover:text-red-500">
           <i data-lucide="x"></i>
@@ -518,7 +690,9 @@ async function showModalEditPenghuni(kamarId) {
       
   const nama = document.getElementById("namaPenghuni").value.trim();
   const kontak = document.getElementById("kontakPenghuni").value.trim();
-  const status = document.getElementById("statusKamar").value;
+  const nominal = document.getElementById("nominalPerBulan").value;
+  // occupancy status is automatic: Terisi if there's a name, otherwise Kosong
+  const status = nama ? "Terisi" : "Kosong";
   const statusPenghuniVal = document.getElementById("statusPenghuni").value.trim();
   const alamatAsalVal = document.getElementById("alamatAsal").value.trim();
       const ktpFile = document.getElementById("ktpFile").files[0];
@@ -534,7 +708,7 @@ async function showModalEditPenghuni(kamarId) {
           }
           try {
             // upload to Apps Script (Drive) and get url
-            ktpUrl = await uploadKTPToAppsScript(ktpFile, kamarId);
+            ktpUrl = await uploadKTPToAppsScript(ktpFile, kamarId, nama);
           } catch (err) {
             console.error("Apps Script upload error:", err);
             alert("❌ Gagal upload KTP ke Apps Script: " + err.message);
@@ -549,6 +723,7 @@ async function showModalEditPenghuni(kamarId) {
           statusPenghuni: statusPenghuniVal || null,
           alamatAsal: alamatAsalVal || null,
           ktpUrl: ktpUrl,
+          nominalPerBulan: nominal ? parseInt(nominal) : null,
           updatedAt: new Date().toISOString(),
         });
 
@@ -578,8 +753,16 @@ async function showModalTambahPembayaran() {
           ${await generateKamarTerisiOptions()}
         </select>
         <input type="text" id="namaPembayaran" placeholder="Nama Penghuni" required class="w-full px-3 py-2 border rounded-lg dark:bg-gray-800">
-        <input type="month" id="bulanPembayaran" required class="w-full px-3 py-2 border rounded-lg dark:bg-gray-800">
-        <input type="number" id="nominalPembayaran" placeholder="Nominal (Rp)" required class="w-full px-3 py-2 border rounded-lg dark:bg-gray-800">
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs text-gray-600 mb-1">Bulan Awal</label>
+            <input type="month" id="bulanAwal" required class="w-full px-3 py-2 border rounded-lg dark:bg-gray-800">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-600 mb-1">Bulan Akhir</label>
+            <input type="month" id="bulanAkhir" required class="w-full px-3 py-2 border rounded-lg dark:bg-gray-800">
+          </div>
+        </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="block text-xs text-gray-600 mb-1">Tanggal Pembayaran (opsional)</label>
@@ -590,10 +773,6 @@ async function showModalTambahPembayaran() {
             <input type="date" id="jatuhTempo" required class="w-full px-3 py-2 border rounded-lg dark:bg-gray-800">
           </div>
         </div>
-        <select id="statusPembayaran" required class="w-full px-3 py-2 border rounded-lg dark:bg-gray-800">
-          <option value="Belum Lunas">Belum Lunas</option>
-          <option value="Lunas">Lunas</option>
-        </select>
         <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2">Simpan</button>
       </form>
       <button id="closeModal" class="absolute top-3 right-3 text-gray-500 hover:text-red-500">
@@ -682,7 +861,7 @@ async function showModalEditPembayaran(pembayaranId) {
     modal.className = "fixed inset-0 z-[999] bg-black/40 backdrop-blur-sm flex justify-center items-center";
     modal.innerHTML = `
       <div class="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-lg max-w-md w-full relative">
-        <h3 class="text-lg font-semibold mb-4">Edit Data Pembayaran</h3>
+        <h3 class="text-lg font-semibold mb-4">Tambah Data Pembayaran</h3>
         <form id="formEditPembayaran" class="space-y-3">
             <input type="text" value="${data.kamar}" disabled class="w-full px-3 py-2 border rounded-lg bg-gray-100 dark:bg-gray-800">
             <input type="text" id="namaPembayaran" value="${data.namaPenghuni}" required class="w-full px-3 py-2 border rounded-lg dark:bg-gray-800">
@@ -830,15 +1009,22 @@ async function showModalEditPembayaranFromKamar(kamarId) {
             <input type="text" value="${k.namaPenghuni || ''}" disabled class="w-full px-3 py-2 border rounded-lg bg-gray-100 dark:bg-gray-800">
           </div>
           <div>
-            <label class="block text-sm text-gray-600 mb-1">Bulan</label>
-            <input type="month" id="bulanPembayaran_edit" value="${last.bulan || ''}" required class="w-full px-3 py-2 border rounded-lg dark:bg-gray-800">
+            <label class="block text-sm text-gray-600 mb-1">Nominal per Bulan</label>
+            <input type="text" value="Rp ${k.nominalPerBulan ? parseInt(k.nominalPerBulan).toLocaleString('id-ID') : '0'}" disabled class="w-full px-3 py-2 border rounded-lg bg-gray-100 dark:bg-gray-800">
           </div>
-          <div>
-            <label class="block text-sm text-gray-600 mb-1">Nominal Pembayaran</label>
-            <input type="number" id="nominalPembayaran_edit" value="${last.nominal || ''}" required placeholder="Masukkan nominal" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-800">
           <div class="grid grid-cols-2 gap-2">
             <div>
-              <label class="block text-xs text-gray-600 mb-1">Tanggal Pembayaran (opsional)</label>
+              <label class="block text-xs text-gray-600 mb-1">Bulan Awal</label>
+              <input type="month" id="bulanAwal_edit" value="${last.bulanAwal || ''}" required class="w-full px-3 py-2 border rounded-lg dark:bg-gray-800">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-600 mb-1">Bulan Akhir (opsional)</label>
+              <input type="month" id="bulanAkhir_edit" value="${last.bulanAkhir || ''}" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-800">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs text-gray-600 mb-1">Tanggal Pembayaran</label>
               <input type="date" id="tanggalPembayaran_edit" value="${last.tanggalPembayaran ? last.tanggalPembayaran.split('T')[0] : ''}" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-800">
             </div>
             <div>
@@ -846,10 +1032,10 @@ async function showModalEditPembayaranFromKamar(kamarId) {
               <input type="date" id="jatuhTempo_edit" value="${last.jatuhTempo ? last.jatuhTempo.split('T')[0] : ''}" required class="w-full px-3 py-2 border rounded-lg dark:bg-gray-800">
             </div>
           </div>
-          <select id="statusPembayaran_edit" required class="w-full px-3 py-2 border rounded-lg dark:bg-gray-800">
-            <option value="Belum Lunas" ${last.statusPembayaran === 'Belum Lunas' ? 'selected' : ''}>Belum Lunas</option>
-            <option value="Lunas" ${last.statusPembayaran === 'Lunas' ? 'selected' : ''}>Lunas</option>
-          </select>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">Total Tagihan</label>
+            <div id="totalTagihan" class="font-bold text-lg text-blue-600">Rp 0</div>
+          </div>
           <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2">Simpan Perubahan</button>
         </form>
         <button id="closeModal" class="absolute top-3 right-3 text-gray-500 hover:text-red-500">
@@ -861,33 +1047,53 @@ async function showModalEditPembayaranFromKamar(kamarId) {
 
     modal.querySelector('#closeModal').onclick = () => modal.remove();
 
+    // Add event listeners for month inputs to calculate total
+    const calculateTotal = () => {
+      const bulanAwal = document.getElementById('bulanAwal_edit').value;
+      const bulanAkhir = document.getElementById('bulanAkhir_edit').value;
+      const totalElement = document.getElementById('totalTagihan');
+      
+      if (bulanAwal && k.nominalPerBulan) {
+        const months = calculateMonthsBetween(bulanAwal, bulanAkhir || null);
+        const total = months * parseInt(k.nominalPerBulan);
+        totalElement.textContent = `Rp ${total.toLocaleString('id-ID')}`;
+      } else {
+        totalElement.textContent = `Rp 0`;
+      }
+    };
+
+    document.getElementById('bulanAwal_edit').addEventListener('change', calculateTotal);
+    document.getElementById('bulanAkhir_edit').addEventListener('change', calculateTotal);
+
     modal.querySelector('#formEditPembayaranFromKamar').onsubmit = async (e) => {
       e.preventDefault();
       const tanggalBayarVal = document.getElementById('tanggalPembayaran_edit').value;
       const jatuhTempoVal = document.getElementById('jatuhTempo_edit').value;
-      const status = document.getElementById('statusPembayaran_edit').value;
+      const bulanAwalVal = document.getElementById('bulanAwal_edit').value;
+      const bulanAkhirVal = document.getElementById('bulanAkhir_edit').value;
 
       try {
-        const tanggalPembayaranISO = tanggalBayarVal ? new Date(tanggalBayarVal).toISOString() : (status === 'Lunas' ? new Date().toISOString() : null);
+        if (!bulanAwalVal) {
+          alert('❌ Mohon pilih bulan awal pembayaran!');
+          return;
+        }
+
+        // Calculate months (bulanAkhir optional)
+        const months = calculateMonthsBetween(bulanAwalVal, bulanAkhirVal || null);
+        const totalNominal = months * (k.nominalPerBulan ? parseInt(k.nominalPerBulan) : 0);
+        const tanggalPembayaranISO = tanggalBayarVal ? new Date(tanggalBayarVal).toISOString() : null;
         const jatuhTempoISO = jatuhTempoVal ? new Date(jatuhTempoVal).toISOString() : null;
-        const bulan = document.getElementById('bulanPembayaran_edit').value;
-        const nominal = document.getElementById('nominalPembayaran_edit').value;
+        
+        // Calculate status automatically: if there's a payment date -> Lunas, else derive from due date
+        const status = tanggalPembayaranISO ? 'Lunas' : calculatePaymentStatus(null, jatuhTempoISO);
 
-        if (!bulan) {
-          alert('❌ Mohon pilih bulan pembayaran!');
-          return;
-        }
-
-        if (!nominal || nominal <= 0) {
-          alert('❌ Mohon masukkan nominal pembayaran yang valid!');
-          return;
-        }
-
-        // Update kamar.lastTagihan
+        // Update kamar.lastTagihan with new structure (bulanAkhir defaults to bulanAwal)
         await updateDoc(doc(db, 'kamar', kamarId), {
           lastTagihan: {
-            bulan,
-            nominal,
+            bulanAwal: bulanAwalVal,
+            bulanAkhir: bulanAkhirVal || bulanAwalVal,
+            nominal: k.nominalPerBulan,
+            totalTagihan: totalNominal,
             statusPembayaran: status,
             tanggalPembayaran: tanggalPembayaranISO,
             jatuhTempo: jatuhTempoISO,
@@ -925,3 +1131,4 @@ async function showModalEditPembayaranFromKamar(kamarId) {
     alert('Error: ' + err.message);
   }
 }
+
