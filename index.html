@@ -1,56 +1,67 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>KostBuYani.jogja</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <title>Dulpan - Finance & Activities</title>
+    <meta name="description" content="Aplikasi manajemen keuangan pribadi dan jadwal aktivitas harian. Catat pemasukan, pengeluaran, hutang, dan rundown kegiatan dengan mudah dan gratis.">
+    <meta name="keywords" content="keuangan, aplikasi keuangan, catat pengeluaran, manajemen uang, daily activity, dulpan, finance app, pwa indonesia">
+    <meta name="author" content="Dulpan Adi Saragih">
+    <meta name="robots" content="index, follow">
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: { extend: { colors: { primary: '#3b82f6' } } },
-    }
-  </script>
-  <script src="https://unpkg.com/lucide@latest"></script>
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Dulpan - Kelola Keuangan & Aktivitas">
+    <meta property="og:description" content="Solusi praktis mencatat keuangan dan jadwal harianmu. Coba sekarang!">
+    <meta property="og:image" content="assets/favicon/android-chrome-512x512.png"> <meta property="og:url" content="https://dulpan-adi-saragih.firebaseapp.com/"> <meta property="og:site_name" content="Dulpan App">
+
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Dulpan - Finance & Activities">
+    <meta name="twitter:description" content="Aplikasi manajemen keuangan dan aktivitas harian yang simpel dan powerful.">
+    <meta name="twitter:image" content="assets/favicon/android-chrome-192x192.png">
+
+    <meta name="theme-color" content="#10b981"> <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Dulpan">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon/favicon-16x16.png">
+    <link rel="shortcut icon" href="assets/favicon/favicon.ico">
+    
+    <link rel="manifest" href="public/manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        'brand-primary': '#10b981',
+                        'brand-secondary': '#f97316',
+                        'income-green': '#10b981',
+                        'expense-red': '#ef4444',
+                        'dark-text': '#1f2937',
+                        'light-bg': '#f9fafb',
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-
-<body class="bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300">
-  <!-- Overlay -->
-  <div id="overlay" class="fixed inset-0 bg-black/40 hidden z-[80] transition-opacity duration-300"></div>
-
-  <!-- HEADER -->
-  <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm sticky top-0 z-40">
-    <div class="max-w-[1024px] mx-auto flex items-center justify-between p-4">
-      <div class="flex items-center space-x-3">
-        <button id="toggleSidebar" class="text-gray-700 dark:text-gray-200 hover:text-blue-600 transition">
-          <i data-lucide="menu"></i>
-        </button>
-        <a href="/" class="text-lg font-semibold hover:text-blue-600 transition">
-          KostBuYani.jogja
-        </a>
-      </div>
-      <div class="flex items-center space-x-4">
-        <button id="notifButton" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 transition">
-          <i data-lucide="bell"></i>
-        </button>
-        <button id="themeToggle" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 transition">
-          <i data-lucide="moon"></i>
-        </button>
-        <button id="adminButton" class="bg-primary text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:opacity-90">
-          Admin
-        </button>
-      </div>
+<body class="bg-light-bg font-sans antialiased select-none"> <div id="app" class="min-h-screen">
+        <div class="flex flex-col justify-center items-center h-screen bg-white dark:bg-gray-900 transition-colors">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mb-4"></div>
+            <p class="text-gray-400 text-sm font-semibold animate-pulse">Memuat Dulpan...</p>
+        </div>
     </div>
-  </header>
-
-  <!-- MAIN -->
-  <main id="main-content" class="max-w-[1024px] mx-auto p-6"></main>
-
-  <!-- ORDER SCRIPT URUTANNYA PENTING -->
-  <script type="module" src="dashboard.js"></script>
-  <script type="module" src="auth.js"></script>
-  <script type="module" src="main.js"></script>
-  <script type="module" src="pages.js"></script>
+    
+    <script type="module" src="source/app.js"></script> 
 </body>
 </html>
