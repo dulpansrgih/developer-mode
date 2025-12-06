@@ -31,7 +31,7 @@ let unsub = {
 const AppTemplate = `
     <div class="flex flex-col min-h-screen relative bg-gray-50 dark:bg-gray-900 transition-colors duration-300 font-sans"> 
         
-        <header class="bg-white dark:bg-gray-800 sticky top-0 z-30 px-4 py-3 border-b border-gray-200 dark:border-gray-700 transition-colors duration-300 flex justify-between items-center max-w-lg mx-auto w-full">
+        <header class="bg-white dark:bg-gray-800 sticky top-0 z-30 px-4 py-3 border-b border-gray-200 dark:border-gray-700 transition-colors duration-300 flex justify-between items-center max-w-lg mx-auto w-full relative">
             <h1 id="page-title" class="text-lg font-bold text-gray-800 dark:text-white">Beranda</h1>
             
             <div class="flex items-center space-x-2">
@@ -40,9 +40,9 @@ const AppTemplate = `
                  </button>
                  <div id="auth-status-container" class="relative"></div>
             </div>
-        </header>
 
-        <div id="profile-dropdown" class="absolute top-16 right-0 m-4 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-2xl z-50 transform scale-95 opacity-0 invisible transition duration-200 origin-top-right ring-1 ring-black ring-opacity-5"></div>
+            <div id="profile-dropdown" class="absolute top-full right-0 mt-2 mr-4 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-2xl z-50 transform scale-95 opacity-0 invisible transition duration-200 origin-top-right ring-1 ring-black ring-opacity-5"></div>
+        </header>
         
         <div id="modal-container" class="fixed inset-0 z-[60] hidden flex items-end sm:items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm sm:p-4 transition-all duration-300"></div>
 

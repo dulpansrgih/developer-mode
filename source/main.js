@@ -394,3 +394,35 @@ export function subscribeToDebtsSummary(callback) {
         callback({ hutang, piutang });
     });
 }
+
+window.renderInfoModal = () => {
+    const modal = document.getElementById('modal-container');
+    // Pastikan elemen modal ada sebelum diakses
+    if (!modal) return;
+
+    modal.classList.remove('hidden');
+    modal.innerHTML = `
+        <div class="bg-white dark:bg-gray-800 w-full sm:max-w-sm rounded-2xl p-6 m-4 animate-scale-up shadow-2xl relative">
+            <button onclick="window.closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 dark:text-white">Dulpan App</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">v1.2.0 • Finance & Productivity</p>
+            </div>
+            <div class="space-y-3 text-sm text-gray-600 dark:text-gray-300">
+                <p>Aplikasi manajemen keuangan pribadi dan produktivitas harian yang simpel dan powerful.</p>
+                <div class="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
+                    <p class="font-bold text-gray-800 dark:text-white mb-1 text-xs">Fitur Utama:</p>
+                    <ul class="list-disc list-inside text-[10px] space-y-1 ml-1 text-left">
+                        <li>Pencatatan Transaksi & Hutang</li>
+                        <li>Laporan & Grafik Realtime</li>
+                        <li>Jurnal Aktivitas Harian</li>
+                        <li>Mode Gelap (Dark Mode)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    `;
+};
