@@ -7,6 +7,8 @@ import {
 } from "../conf/auth.js"; 
 import * as Module from "./module.js";
 import { renderCatatanMe } from "../conf/appScript.js";
+import { renderProfilePage 
+} from "./main.js";
 
 // --- STATE UI ---
 let isLoggedIn = false; 
@@ -90,35 +92,83 @@ function renderAuthStatus() {
     
     if (isLoggedIn && currentUser) {
         const initials = currentUser.email.charAt(0).toUpperCase();
-        container.innerHTML = `<button id="profile-btn" class="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow hover:bg-blue-700 transition">${initials}</button>`;
+        
+        container.innerHTML = `<button id="profile-btn" class="w-9 h-9 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md hover:shadow-lg hover:scale-105 transition ring-2 ring-white dark:ring-gray-800">${initials}</button>`;
+        
         dropdown.innerHTML = `
-            <div class="px-4 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 rounded-t-xl flex items-center gap-3">
-                <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold">${initials}</div>
-                <div class="overflow-hidden">
-                    <p class="text-sm font-bold text-gray-800 dark:text-white truncate">${currentUser.email}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Admin Keuangan</p>
+            <div onclick="window.location.hash='#profile'" class="p-4 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-t-2xl flex items-center gap-4 cursor-pointer hover:opacity-95 transition relative overflow-hidden group">
+                <div class="absolute top-0 right-0 w-20 h-20 bg-white opacity-5 rounded-full -mr-10 -mt-10"></div>
+                <div class="absolute bottom-0 left-0 w-16 h-16 bg-white opacity-5 rounded-full -ml-8 -mb-8"></div>
+
+                <div class="w-12 h-12 bg-white text-blue-600 rounded-full flex items-center justify-center font-black text-lg shadow-lg relative z-10 group-hover:scale-110 transition duration-300 border-2 border-blue-100">
+                    ${initials}
+                </div>
+                <div class="overflow-hidden relative z-10 flex-1">
+                    <p class="text-sm font-bold text-white truncate">${currentUser.email}</p>
+                    <div class="flex items-center gap-1 mt-1">
+                        <span class="text-[10px] text-blue-100 font-medium">Lihat Profil</span>
+                        <svg class="w-3 h-3 text-blue-200 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </div>
                 </div>
             </div>
             
-            <div class="py-2 text-sm font-medium">
-                <a href="#dashboard" class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                    <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                    Dashboard Admin
+            <div class="py-2 text-sm font-medium bg-white dark:bg-gray-800 rounded-b-2xl">
+                
+                <a href="#dashboard" class="flex items-center px-4 py-3 hover:bg-orange-50 dark:hover:bg-orange-900/10 transition group">
+                    <div class="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mr-3 text-orange-600 group-hover:scale-110 transition shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    </div>
+                    <span class="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-500">
+                        DASHBOARD ADMIN
+                    </span>
+                </a>
+
+                <div class="border-t border-gray-100 dark:border-gray-700 my-1 mx-4"></div>
+
+                <a href="#rekening" class="flex items-center px-4 py-2.5 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition group">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center mr-3 text-indigo-500 group-hover:bg-white group-hover:shadow-sm transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                    </div>
+                    Rekening
                 </a>
                 
-                <a href="#rundown" class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                    <svg class="w-5 h-5 mr-3 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <a href="#kategori" class="flex items-center px-4 py-2.5 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition group">
+                    <div class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center mr-3 text-blue-500 group-hover:bg-white group-hover:shadow-sm transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
+                    </div>
+                    Kategori
+                </a>
+                
+                <button onclick="window.renderExportModal()" class="w-full flex items-center px-4 py-2.5 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition group text-left">
+                    <div class="w-8 h-8 rounded-lg bg-green-50 dark:bg-green-900/20 flex items-center justify-center mr-3 text-green-600 group-hover:bg-white group-hover:shadow-sm transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    </div>
+                    Ekspor Excel
+                </button>
+
+                <a href="#rundown" class="flex items-center px-4 py-2.5 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition group">
+                    <div class="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center mr-3 text-purple-500 group-hover:bg-white group-hover:shadow-sm transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
                     Rundown Saya
                 </a>
 
-                <div class="border-t border-gray-100 dark:border-gray-700 my-1"></div>
-                <a href="#rekening" class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition"><svg class="w-5 h-5 mr-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>Rekening</a>
-                <a href="#kategori" class="flex items-center px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition"><svg class="w-5 h-5 mr-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>Kategori</a>
-                <button onclick="window.renderExportModal()" class="w-full flex items-center px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition text-left"><svg class="w-5 h-5 mr-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>Ekspor Excel</button>
-                <button onclick="window.renderInfoModal()" class="w-full flex items-center px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition text-left"><svg class="w-5 h-5 mr-3 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>Info Aplikasi</button>
+                <div class="p-3 border-t border-gray-100 dark:border-gray-700 mt-1 flex gap-3">
+                    <button id="logout-btn" class="flex-1 flex items-center justify-center px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-400 rounded-xl transition font-bold text-xs shadow-sm">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                        Keluar
+                    </button>
+                    <button onclick="window.renderInfoModal()" class="w-10 h-10 flex items-center justify-center rounded-xl bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition relative overflow-hidden">
+                        <svg class="w-5 h-5 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span class="absolute top-2 right-2 flex h-2 w-2">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                        </span>
+                    </button>
+                </div>
             </div>
-            <div class="p-2 border-t border-gray-100 dark:border-gray-700"><button id="logout-btn" class="w-full flex items-center px-4 py-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition font-bold"><svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>Keluar</button></div>
         `;
+        
         document.getElementById('profile-btn').addEventListener('click', (e) => { e.stopPropagation(); toggleDropdown(); });
         document.getElementById('logout-btn').addEventListener('click', () => { signOut(auth); toggleDropdown(false); });
         dropdown.querySelectorAll('a').forEach(link => link.addEventListener('click', () => toggleDropdown(false)));
@@ -160,6 +210,7 @@ const routes = {
     '#dashboard': { title: 'Admin Dashboard', renderer: (c) => Module.renderDashboardAdmin(c, unsub) },
     '#rundown': { title: 'Rundown Saya', renderer: (c) => Module.renderRundown(c, unsub) },
     '#login': { title: 'Dulpan Adi Saragih', renderer: renderLoginPage },
+    '#profile': { title: 'Profil Saya', renderer: renderProfilePage },
     '#catatanMe': { title: 'Catatan Pribadi', renderer: (c) => unsub.catatan = renderCatatanMe(c) },
 };
 
