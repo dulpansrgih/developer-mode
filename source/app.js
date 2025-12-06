@@ -6,6 +6,7 @@ import {
     signOut 
 } from "../conf/auth.js"; 
 import * as Module from "./module.js";
+import { renderCatatanMe } from "../conf/appScript.js";
 
 // --- STATE UI ---
 let isLoggedIn = false; 
@@ -22,7 +23,8 @@ let unsub = {
     activities: null,
     report: null,
     dashboard: null,
-    rundown: null
+    rundown: null,
+    catatan: null
 };
 
 // --- TEMPLATE SHELL UTAMA ---
@@ -158,6 +160,7 @@ const routes = {
     '#dashboard': { title: 'Admin Dashboard', renderer: (c) => Module.renderDashboardAdmin(c, unsub) },
     '#rundown': { title: 'Rundown Saya', renderer: (c) => Module.renderRundown(c, unsub) },
     '#login': { title: 'Dulpan Adi Saragih', renderer: renderLoginPage },
+    '#catatanMe': { title: 'Catatan Pribadi', renderer: (c) => unsub.catatan = renderCatatanMe(c) },
 };
 
 function handleHashChange() {
